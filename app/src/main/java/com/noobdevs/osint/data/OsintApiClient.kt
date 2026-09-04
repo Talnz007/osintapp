@@ -39,7 +39,12 @@ class OsintApiClient(private val authManager: AuthManager) {
         try {
             val cleanUrl = url.trimEnd('/')
             val creds = "$user:$pass"
-            val authHeader = "Basic " + Base64.encodeToString(creds.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+            val b64 = try {
+                Base64.encodeToString(creds.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+            } catch (e: Throwable) {
+                java.util.Base64.getEncoder().encodeToString(creds.toByteArray(Charsets.UTF_8))
+            }
+            val authHeader = "Basic $b64"
             val client = OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
