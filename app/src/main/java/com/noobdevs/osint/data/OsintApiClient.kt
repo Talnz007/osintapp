@@ -95,7 +95,9 @@ class OsintApiClient(private val authManager: AuthManager) {
         limit: Int = 20,
         category: String? = null,
         attackType: String? = null,
-        search: String? = null
+        search: String? = null,
+        pipeline: String? = null,
+        hours: Int? = null
     ): Result<PostsResponse> = withContext(Dispatchers.IO) {
         try {
             val urlBuilder = "${authManager.baseUrl}/api/posts".toHttpUrlOrNull()?.newBuilder()
@@ -112,6 +114,12 @@ class OsintApiClient(private val authManager: AuthManager) {
             }
             if (!search.isNullOrBlank()) {
                 urlBuilder.addQueryParameter("search", search)
+            }
+            if (!pipeline.isNullOrBlank()) {
+                urlBuilder.addQueryParameter("pipeline", pipeline)
+            }
+            if (hours != null) {
+                urlBuilder.addQueryParameter("hours", hours.toString())
             }
 
             val request = Request.Builder()

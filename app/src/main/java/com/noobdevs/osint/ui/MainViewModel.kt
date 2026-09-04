@@ -64,6 +64,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedAttackType = MutableStateFlow("ALL")
     val selectedAttackType: StateFlow<String> = _selectedAttackType.asStateFlow()
 
+    private val _selectedTimeRange = MutableStateFlow(com.noobdevs.osint.data.TimeRange.LIVE)
+    val selectedTimeRange: StateFlow<com.noobdevs.osint.data.TimeRange> = _selectedTimeRange.asStateFlow()
+
+    private val _selectedPipeline = MutableStateFlow(com.noobdevs.osint.data.PipelineFilter.ALL)
+    val selectedPipeline: StateFlow<com.noobdevs.osint.data.PipelineFilter> = _selectedPipeline.asStateFlow()
+
+    private val _selectedCategory = MutableStateFlow("ALL")
+    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -83,6 +92,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleDarkMode(enabled: Boolean) {
         authManager.isDarkMode = enabled
         _isDarkMode.value = enabled
+    }
+
+    fun setTimeRange(range: com.noobdevs.osint.data.TimeRange) {
+        _selectedTimeRange.value = range
+        loadPosts(page = 1, append = false)
+    }
+
+    fun setPipelineFilter(filter: com.noobdevs.osint.data.PipelineFilter) {
+        _selectedPipeline.value = filter
+        loadPosts(page = 1, append = false)
+    }
+
+    fun setCategoryFilter(category: String) {
+        _selectedCategory.value = category
+        loadPosts(page = 1, append = false)
     }
 
     fun setProvinceFilter(province: String) {
@@ -114,13 +138,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _postsError.value = null
 
             val attackFilter = if (_selectedAttackType.value == "ALL") null else _selectedAttackType.value
+            val category = if (_selectedCategory.value == "ALL") null else _selectedCategory.value
+            val pipeline = _selectedPipeline.value.value
+            val hours = _selectedTimeRange.value.hours
             val search = if (_searchQuery.value.isBlank()) null else _searchQuery.value
 
             apiClient.getPosts(
                 page = page,
                 limit = 25,
+                category = category,
                 attackType = attackFilter,
-                search = search
+                search = search,
+                pipeline = pipeline,
+                hours = hours
             ).onSuccess { response ->
                 _currentPage.value = response.page
                 _totalPages.value = response.pages

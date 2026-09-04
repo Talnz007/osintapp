@@ -115,3 +115,113 @@ data class DeckItem(
     @SerializedName("modified_at") val modifiedAt: String = "",
     @SerializedName("modified_timestamp") val modifiedTimestamp: Double = 0.0
 )
+
+enum class TimeRange(val label: String, val hours: Int?) {
+    LIVE("Live Feed", null),
+    HOURS_6("Last 6 Hours", 6),
+    HOURS_24("Last 24 Hours", 24),
+    MONTH("This Month", 720)
+}
+
+enum class PipelineFilter(val label: String, val value: String?) {
+    ALL("All Pipelines", null),
+    REGIONAL_NEWS("Regional News", "regional_news"),
+    SENTIMENT_ONLY("Sentiment Only", "sentiment_only")
+}
+
+data class TerminologyEntry(
+    val code: String,
+    val fullName: String,
+    val category: String,
+    val description: String,
+    val example: String = ""
+)
+
+object OsintLexicon {
+    val entries = listOf(
+        TerminologyEntry(
+            code = "FAK",
+            fullName = "Fitna al-Khawarij",
+            category = "Militant Faction (Northern)",
+            description = "Official Pakistani state designation for Tehreek-e-Taliban Pakistan (TTP) and associated northern/Afghan border militant networks.",
+            example = "FAK proj exaggerated claims to demo kinetic ascendancy."
+        ),
+        TerminologyEntry(
+            code = "FAH",
+            fullName = "Fitna al-Haram",
+            category = "Separatist Faction (Southern)",
+            description = "Designation for Baloch militant/terrorist groups including BLA (Majeed Brigade), BLF, and BRAS operating in Balochistan.",
+            example = "FAH propagated exaggerated successes while alleging state repression."
+        ),
+        TerminologyEntry(
+            code = "Ks",
+            fullName = "Khawarij",
+            category = "Combatant Classification",
+            description = "Designation for TTP / ISKP fighters and cadres operating along the western frontier.",
+            example = "4x Ks neutralized during sanitization op."
+        ),
+        TerminologyEntry(
+            code = "Ts",
+            fullName = "Terrorists",
+            category = "Combatant Classification",
+            description = "Designation for BLA / BLF / separatist insurgents in the southern theater.",
+            example = "Ts attempted sabotaging infrastructure near Gwadar."
+        ),
+        TerminologyEntry(
+            code = "SFs",
+            fullName = "Security Forces",
+            category = "Forces",
+            description = "Encompasses Pakistan Armed Forces, Frontier Corps (FC North/South), and specialized law enforcement units.",
+            example = "SFs conducted intelligence-based operation (IBO)."
+        ),
+        TerminologyEntry(
+            code = "IBO",
+            fullName = "Intelligence-Based Operation",
+            category = "Tactical Action",
+            description = "Targeted kinetic military or CT operation executed based on human or signals intelligence.",
+            example = "High-value commander apprehended during midnight IBO."
+        ),
+        TerminologyEntry(
+            code = "CP",
+            fullName = "Check Post",
+            category = "Infrastructure",
+            description = "Static security checkpoint or border monitoring station.",
+            example = "Brief standoff at peripheral CP repelled by SFs."
+        ),
+        TerminologyEntry(
+            code = "Lki",
+            fullName = "Lakki Marwat",
+            category = "Geographic Code",
+            description = "District in southern Khyber Pakhtunkhwa province.",
+            example = "Activity reported in rural Lki sector."
+        ),
+        TerminologyEntry(
+            code = "Bjr",
+            fullName = "Bajaur",
+            category = "Geographic Code",
+            description = "Tribal district in Malakand Division along the Pak-Afghan border.",
+            example = "Border movement intercepted in Bjr."
+        ),
+        TerminologyEntry(
+            code = "Khy",
+            fullName = "Khyber",
+            category = "Geographic Code",
+            description = "Historic tribal pass and district connecting Peshawar to Torkham border.",
+            example = "Tirah valley operations within Khy district."
+        ),
+        TerminologyEntry(
+            code = "Psc",
+            fullName = "Peshawar",
+            category = "Geographic Code",
+            description = "Provincial capital of Khyber Pakhtunkhwa.",
+            example = "Urban CT sweep conducted in suburban Psc."
+        ),
+        TerminologyEntry(
+            code = "Zhob / Sherani",
+            fullName = "Zhob & Sherani Districts",
+            category = "Geographic Code",
+            description = "Northern Balochistan districts bordering South Waziristan and KP.",
+            example = "Infiltration attempt thwarted along Zhob-Sherani axis."
+        )
+    )
+}

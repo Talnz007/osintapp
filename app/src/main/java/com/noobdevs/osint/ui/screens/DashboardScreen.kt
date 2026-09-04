@@ -30,16 +30,44 @@ import com.noobdevs.osint.ui.theme.*
 @Composable
 fun DashboardScreen(viewModel: MainViewModel) {
     val statsState by viewModel.statsState.collectAsState()
+    val selectedTimeRange by viewModel.selectedTimeRange.collectAsState()
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
+            .padding(horizontal = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(top = 14.dp, bottom = 32.dp)
     ) {
         item {
             HeaderCard(onRefresh = { viewModel.loadDashboardStats() })
+        }
+
+        // Time Range Filter Bar (Website replication)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("RANGE:", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(com.noobdevs.osint.data.TimeRange.values()) { tr ->
+                            FilterChip(
+                                selected = selectedTimeRange == tr,
+                                onClick = { viewModel.setTimeRange(tr) },
+                                label = { Text(tr.label, fontSize = 11.sp) },
+                                modifier = Modifier.height(28.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         when (val state = statsState) {
