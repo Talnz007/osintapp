@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -239,15 +240,16 @@ fun DorBulletinCard(post: PostItem, onCopy: (String) -> Unit) {
             }
 
             Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     rawText,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    modifier = Modifier.padding(12.dp)
+                    fontSize = 14.5.sp,
+                    lineHeight = 21.sp,
+                    modifier = Modifier.padding(14.dp),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -257,8 +259,8 @@ fun DorBulletinCard(post: PostItem, onCopy: (String) -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Source: ${post.account ?: "Regional News"}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(post.scrapedDate?.take(16)?.replace("T", " ") ?: "", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Source: ${post.account ?: "Regional News Wire"}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
 
                 Button(
@@ -267,7 +269,7 @@ fun DorBulletinCard(post: PostItem, onCopy: (String) -> Unit) {
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(14.dp))
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("WhatsApp", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }

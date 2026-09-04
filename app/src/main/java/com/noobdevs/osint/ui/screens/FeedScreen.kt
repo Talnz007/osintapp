@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -57,9 +59,10 @@ fun FeedScreen(viewModel: MainViewModel) {
 
     var activeSearchText by remember { mutableStateOf(searchQuery) }
     var postForVideoDownloader by remember { mutableStateOf<PostItem?>(null) }
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     val provinces = listOf("All", "Balochistan", "KPK", "AJK / Kashmir", "Sindh", "Punjab", "International")
-    val attackTypes = listOf("ALL", "AMBUSH_FIRE", "IED_EXPLOSIVE", "CIVIL_UNREST", "SABOTAGE", "GENERAL")
+    val hasActiveFilters = selectedTimeRange != TimeRange.LIVE || selectedPipeline != PipelineFilter.ALL || selectedAttackType != "ALL"
 
     // Filter posts by evidence bag selection and province
     val basePosts = if (showOnlyBookmarks) bookmarks else posts
@@ -69,149 +72,146 @@ fun FeedScreen(viewModel: MainViewModel) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Comprehensive Tactical Filters Header
+        // EXECUTIVE CLEAN HEADER
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Search Input
-            OutlinedTextField(
-                value = activeSearchText,
-                onValueChange = {
-                    activeSearchText = it
-                    viewModel.setSearchQuery(it)
-                },
-                placeholder = { Text("Search intelligence wire, accounts, keywords...", fontSize = 12.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                trailingIcon = {
-                    if (activeSearchText.isNotEmpty()) {
-                        IconButton(onClick = {
-                            activeSearchText = ""
-                            viewModel.setSearchQuery("")
-                        }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Evidence Bag & Dossier Action Row
+            // Title & Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterChip(
-                    selected = showOnlyBookmarks,
-                    onClick = { viewModel.toggleShowOnlyBookmarks() },
-                    leadingIcon = {
-                        Icon(
-                            if (showOnlyBookmarks) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                            contentDescription = null,
-                            tint = if (showOnlyBookmarks) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
+                Column {
+                    Text(
+                        "Intelligence Wire",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(StatusGreen))
+                        Text(
+                            "Live Operational Feed • %,d Intercepts".format(posts.size),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
-                    },
-                    label = { Text("Evidence Bag (${bookmarks.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = StatusAmber.copy(alpha = 0.2f),
-                        selectedLabelColor = StatusAmber
-                    ),
-                    modifier = Modifier.height(30.dp)
-                )
+                    }
+                }
 
                 if (showOnlyBookmarks && bookmarks.isNotEmpty()) {
                     FilledTonalButton(
                         onClick = { viewModel.exportEvidenceDossier() },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        modifier = Modifier.height(30.dp)
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Export Dossier", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Export Dossier", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
-            // 1. TIME RANGE FILTERS (FROM WEBSITE)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("TIME:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(TimeRange.values()) { tr ->
-                        FilterChip(
-                            selected = selectedTimeRange == tr,
-                            onClick = { viewModel.setTimeRange(tr) },
-                            label = { Text(tr.label, fontSize = 11.sp) },
-                            modifier = Modifier.height(30.dp)
-                        )
+            // Search Bar + Filter Dialog Trigger Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = activeSearchText,
+                    onValueChange = {
+                        activeSearchText = it
+                        viewModel.setSearchQuery(it)
+                    },
+                    placeholder = { Text("Search wire, accounts, incidents...", fontSize = 13.sp) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    trailingIcon = {
+                        if (activeSearchText.isNotEmpty()) {
+                            IconButton(onClick = {
+                                activeSearchText = ""
+                                viewModel.setSearchQuery("")
+                            }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Dedicated Filter Button with Active Badge
+                FilledTonalButton(
+                    onClick = { showFilterSheet = true },
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
+                ) {
+                    BadgedBox(badge = {
+                        if (hasActiveFilters) {
+                            Badge { Text("!") }
+                        }
+                    }) {
+                        Icon(Icons.Default.FilterList, contentDescription = "Filters", modifier = Modifier.size(20.dp))
                     }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Filters", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
-            // 2. PIPELINE FILTERS (FROM WEBSITE: Regional News vs Sentiment)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("PIPE:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(PipelineFilter.values()) { pipe ->
-                        FilterChip(
-                            selected = selectedPipeline == pipe,
-                            onClick = { viewModel.setPipelineFilter(pipe) },
-                            label = { Text(pipe.label, fontSize = 11.sp) },
-                            modifier = Modifier.height(30.dp)
-                        )
-                    }
+            // Single Row Zone & Evidence Bag Filter Bar
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                item {
+                    FilterChip(
+                        selected = showOnlyBookmarks,
+                        onClick = { viewModel.toggleShowOnlyBookmarks() },
+                        leadingIcon = {
+                            Icon(
+                                if (showOnlyBookmarks) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                contentDescription = null,
+                                tint = if (showOnlyBookmarks) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        label = { Text("Evidence Bag (${bookmarks.size})", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = StatusAmber.copy(alpha = 0.2f),
+                            selectedLabelColor = StatusAmber
+                        ),
+                        modifier = Modifier.height(34.dp)
+                    )
                 }
-            }
 
-            // 3. PROVINCE FILTERS (ORGANIZED BY PROVINCE)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("ZONE:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(provinces) { province ->
-                        FilterChip(
-                            selected = selectedProvince == province,
-                            onClick = { viewModel.setProvinceFilter(province) },
-                            label = { Text(province, fontSize = 11.sp) },
-                            modifier = Modifier.height(30.dp)
-                        )
-                    }
-                }
-            }
-
-            // 4. ATTACK TYPE FILTERS
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("TYPE:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = StatusRed)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(attackTypes) { attack ->
-                        FilterChip(
-                            selected = selectedAttackType == attack,
-                            onClick = { viewModel.setAttackTypeFilter(attack) },
-                            label = { Text(attack.replace("_", " "), fontSize = 11.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = if (attack == "AMBUSH_FIRE" || attack == "IED_EXPLOSIVE") StatusRed.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            modifier = Modifier.height(30.dp)
-                        )
-                    }
+                items(provinces) { province ->
+                    FilterChip(
+                        selected = !showOnlyBookmarks && selectedProvince == province,
+                        onClick = {
+                            if (showOnlyBookmarks) viewModel.toggleShowOnlyBookmarks()
+                            viewModel.setProvinceFilter(province)
+                        },
+                        label = { Text(if (province == "All") "All Regions" else province, fontSize = 12.sp, fontWeight = FontWeight.Medium) },
+                        modifier = Modifier.height(34.dp)
+                    )
                 }
             }
         }
 
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
 
         // Posts Stream
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(top = 12.dp, bottom = 32.dp)
         ) {
             if (error != null) {
@@ -221,10 +221,10 @@ fun FeedScreen(viewModel: MainViewModel) {
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text("Failed to retrieve intelligence wire", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                            Text(error ?: "", fontSize = 12.sp)
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(error ?: "", fontSize = 13.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
                             Button(onClick = { viewModel.loadPosts(1, append = false) }) {
                                 Text("Retry")
                             }
@@ -237,29 +237,29 @@ fun FeedScreen(viewModel: MainViewModel) {
                 item {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 32.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                            modifier = Modifier.padding(32.dp).fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Icon(
                                 if (showOnlyBookmarks) Icons.Default.BookmarkBorder else Icons.Default.SearchOff,
                                 contentDescription = null,
-                                modifier = Modifier.size(40.dp),
+                                modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 if (showOnlyBookmarks) "Evidence Bag is Empty" else "No matching intelligence records",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
+                                fontSize = 16.sp
                             )
                             Text(
-                                if (showOnlyBookmarks) "Bookmark posts from the feed using the bookmark icon to collect them in your Evidence Bag."
-                                else "Try clearing search filters or changing the time range.",
-                                fontSize = 12.sp,
+                                if (showOnlyBookmarks) "Save important posts using the bookmark icon to review them later in your Evidence Bag."
+                                else "Try resetting filters or searching with different keywords.",
+                                fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
@@ -281,16 +281,118 @@ fun FeedScreen(viewModel: MainViewModel) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 14.dp),
+                        .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(26.dp))
+                        CircularProgressIndicator(modifier = Modifier.size(28.dp))
                     } else if (filteredPosts.isNotEmpty()) {
-                        OutlinedButton(onClick = { viewModel.loadNextPage() }) {
+                        OutlinedButton(
+                            onClick = { viewModel.loadNextPage() },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
                             Icon(Icons.Default.ExpandMore, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Load More Intelligence (${filteredPosts.size} showing)")
+                            Text("Load More Intelligence (${filteredPosts.size} showing)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // CLEAN FILTER DIALOG
+    if (showFilterSheet) {
+        Dialog(onDismissRequest = { showFilterSheet = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Filter Intelligence Stream", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { showFilterSheet = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+
+                    // 1. Time Window
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("TIME WINDOW", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            TimeRange.values().forEach { tr ->
+                                FilterChip(
+                                    selected = selectedTimeRange == tr,
+                                    onClick = { viewModel.setTimeRange(tr) },
+                                    label = { Text(tr.label, fontSize = 11.sp) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+
+                    // 2. Feed Source Pipeline
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("INTEL STREAM PIPELINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            PipelineFilter.values().forEach { pipe ->
+                                FilterChip(
+                                    selected = selectedPipeline == pipe,
+                                    onClick = { viewModel.setPipelineFilter(pipe) },
+                                    label = { Text(pipe.label, fontSize = 11.sp) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+
+                    // 3. Incident Type
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("INCIDENT & ATTACK CATEGORY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusRed)
+                        val attackTypes = listOf("ALL", "AMBUSH_FIRE", "IED_EXPLOSIVE", "CIVIL_UNREST", "SABOTAGE")
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(attackTypes) { attack ->
+                                FilterChip(
+                                    selected = selectedAttackType == attack,
+                                    onClick = { viewModel.setAttackTypeFilter(attack) },
+                                    label = { Text(attack.replace("_", " "), fontSize = 11.sp) }
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                    // Dialog Actions
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.setTimeRange(TimeRange.LIVE)
+                                viewModel.setPipelineFilter(PipelineFilter.ALL)
+                                viewModel.setAttackTypeFilter("ALL")
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Reset")
+                        }
+
+                        Button(
+                            onClick = { showFilterSheet = false },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Apply")
                         }
                     }
                 }
@@ -333,27 +435,27 @@ fun EnhancedPostCard(
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
             .border(
                 1.dp,
-                if (isAttack) StatusRed.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-                RoundedCornerShape(14.dp)
+                if (isAttack) StatusRed.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                RoundedCornerShape(16.dp)
             )
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Header: Account & Province
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Box(
                         modifier = Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .size(36.dp)
+                            .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
@@ -361,73 +463,85 @@ fun EnhancedPostCard(
                             post.account?.take(1)?.uppercase() ?: "@",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = 12.sp
+                            fontSize = 14.sp
                         )
                     }
-                    Column {
-                        Text(post.account ?: "Unknown Account", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(post.account ?: "Unknown Source", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         Text(
-                            "${post.sourcePipeline ?: "feed"} • ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}",
-                            fontSize = 11.sp,
+                            "${post.sourcePipeline ?: "Field Stream"} • ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}",
+                            fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                Surface(shape = RoundedCornerShape(6.dp), color = provinceColor.copy(alpha = 0.15f)) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = provinceColor.copy(alpha = 0.12f)
+                ) {
                     Text(
                         province,
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = provinceColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }
 
-            // Badges Row
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (!post.attackType.isNullOrBlank()) {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = if (isAttack) StatusRed.copy(alpha = 0.2f) else MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Text(
-                            post.attackType.replace("_", " "),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isAttack) StatusRed else MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
+            // High-Priority Incident Indicators (Clean & dignified)
+            if (isAttack || post.isShaheedIncident == 1 || post.isHighProfile == 1) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!post.attackType.isNullOrBlank() && post.attackType != "GENERAL") {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (isAttack) StatusRed.copy(alpha = 0.15f) else MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(if (isAttack) StatusRed else MaterialTheme.colorScheme.primary))
+                                Text(
+                                    post.attackType.replace("_", " "),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isAttack) StatusRed else MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
                     }
-                }
-                if (post.isShaheedIncident == 1) {
-                    Surface(shape = RoundedCornerShape(4.dp), color = StatusRed.copy(alpha = 0.2f)) {
-                        Text("INCIDENT", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = StatusRed, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    if (post.isShaheedIncident == 1) {
+                        Surface(shape = RoundedCornerShape(6.dp), color = StatusRed.copy(alpha = 0.15f)) {
+                            Text("CASUALTY REPORT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusRed, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                        }
                     }
-                }
-                if (post.isHighProfile == 1) {
-                    Surface(shape = RoundedCornerShape(4.dp), color = StatusAmber.copy(alpha = 0.2f)) {
-                        Text("HIGH PROFILE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = StatusAmber, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    if (post.isHighProfile == 1) {
+                        Surface(shape = RoundedCornerShape(6.dp), color = StatusAmber.copy(alpha = 0.15f)) {
+                            Text("HIGH PROFILE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusAmber, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                        }
                     }
                 }
             }
 
-            // Content
+            // Highly Legible Content Body
             Text(
                 post.content.orEmpty(),
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = 19.sp
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Normal
             )
 
-            // Intercepted Image Preview
+            // Intercepted Image Preview (if available)
             if (mediaUrl != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     AsyncImage(
@@ -443,14 +557,15 @@ fun EnhancedPostCard(
                 }
             }
 
-            // Hashtags
+            // Hashtags (if any)
             if (post.hashtags.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(post.hashtags) { tag ->
-                        Text(tag, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                        Text(tag, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                     }
                 }
             }
+
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
             // Action Row with WhatsApp, Inbuilt Video Player, Save Pic, Bookmark, and Share
@@ -459,41 +574,41 @@ fun EnhancedPostCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     // DIRECT WHATSAPP BUTTON (CORPORATE DISPATCH)
                     Button(
                         onClick = { ShareHelper.sendPostToWhatsApp(context, post) },
                         colors = ButtonDefaults.buttonColors(containerColor = WhatsAppGreen),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(8.dp)
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(13.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("WhatsApp", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("WhatsApp", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
 
                     // Inbuilt Video Player Trigger
                     if (!post.url.isNullOrBlank()) {
                         OutlinedButton(
                             onClick = onOpenVideoDownloader,
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(8.dp)
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Play / Vid", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("Watch", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
                     if (mediaUrl != null) {
                         FilledTonalButton(
                             onClick = { viewModel.downloadImage(post) },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(8.dp)
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text("Pic", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Photo", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -502,30 +617,30 @@ fun EnhancedPostCard(
                     val isSaved = viewModel.isBookmarked(post.id)
                     IconButton(
                         onClick = { viewModel.toggleBookmark(post) },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                             contentDescription = "Save Evidence",
                             tint = if (isSaved) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     IconButton(
                         onClick = { viewModel.sharePost(post) },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             Icons.Default.Share,
                             contentDescription = "Share SITREP",
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     if (!post.url.isNullOrBlank()) {
-                        IconButton(onClick = { onOpenBrowser(post.url) }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open External", modifier = Modifier.size(18.dp))
+                        IconButton(onClick = { onOpenBrowser(post.url) }, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open Source Link", modifier = Modifier.size(18.dp))
                         }
                     }
                 }

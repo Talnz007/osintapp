@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -35,37 +37,28 @@ fun DashboardScreen(viewModel: MainViewModel) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        contentPadding = PaddingValues(top = 14.dp, bottom = 32.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 36.dp)
     ) {
         item {
             HeaderCard(onRefresh = { viewModel.loadDashboardStats() })
         }
 
-        // Time Range Filter Bar (Website replication)
+        // Clean Segmented Time Window
         item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text("RANGE:", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        items(com.noobdevs.osint.data.TimeRange.values()) { tr ->
-                            FilterChip(
-                                selected = selectedTimeRange == tr,
-                                onClick = { viewModel.setTimeRange(tr) },
-                                label = { Text(tr.label, fontSize = 11.sp) },
-                                modifier = Modifier.height(28.dp)
-                            )
-                        }
-                    }
+                com.noobdevs.osint.data.TimeRange.values().forEach { tr ->
+                    FilterChip(
+                        selected = selectedTimeRange == tr,
+                        onClick = { viewModel.setTimeRange(tr) },
+                        label = { Text(tr.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
+                        modifier = Modifier.weight(1f).height(36.dp)
+                    )
                 }
             }
         }
@@ -76,10 +69,10 @@ fun DashboardScreen(viewModel: MainViewModel) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(240.dp),
+                            .height(260.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
                     }
                 }
             }
@@ -87,15 +80,14 @@ fun DashboardScreen(viewModel: MainViewModel) {
                 item {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Failed to load intelligence metrics", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Failed to load intelligence metrics", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Text(state.message, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { viewModel.loadDashboardStats() }) {
-                                Text("Retry")
+                            Button(onClick = { viewModel.loadDashboardStats() }, shape = RoundedCornerShape(10.dp)) {
+                                Text("Retry Connection")
                             }
                         }
                     }
@@ -106,27 +98,28 @@ fun DashboardScreen(viewModel: MainViewModel) {
 
                 item {
                     Text(
-                        "KEY INTEL METRICS",
+                        "OPERATIONAL KPI SUMMARY",
                         style = MaterialTheme.typography.labelMedium.copy(
                             letterSpacing = 1.2.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold
                         ),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
 
+                // Balanced, highly readable 2x2 Metric Grid
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             MetricCard(
-                                title = "Total Posts",
+                                title = "Total Wire Posts",
                                 value = "%,d".format(stats.totalPosts),
                                 icon = Icons.Default.Assessment,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.weight(1f)
                             )
                             MetricCard(
-                                title = "Est. Reach",
+                                title = "Estimated Reach",
                                 value = "%,d".format(stats.estimatedReach),
                                 icon = Icons.Default.Visibility,
                                 color = StatusGreen,
@@ -135,24 +128,17 @@ fun DashboardScreen(viewModel: MainViewModel) {
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             MetricCard(
-                                title = "Incidents",
+                                title = "Kinetic Incidents",
                                 value = "%,d".format(stats.totalShaheedIncidents),
                                 icon = Icons.Default.Warning,
                                 color = StatusRed,
                                 modifier = Modifier.weight(1f)
                             )
                             MetricCard(
-                                title = "High Profile",
+                                title = "High-Profile Alerts",
                                 value = "%,d".format(stats.totalHighProfile),
                                 icon = Icons.Default.Shield,
                                 color = StatusAmber,
-                                modifier = Modifier.weight(1f)
-                            )
-                            MetricCard(
-                                title = "Intercepts",
-                                value = "%,d".format(stats.postsWithImages),
-                                icon = Icons.Default.Image,
-                                color = StatusPurple,
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -168,7 +154,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
 
                 item {
                     TrendingSectionCard(
-                        title = "Top Trending Hashtags",
+                        title = "Key Tracked Hashtags",
                         icon = Icons.Default.Tag,
                         items = stats.topHashtags.map { "${it.hashtag} (${it.count})" },
                         onItemClick = { tag ->
@@ -181,7 +167,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
 
                 item {
                     TrendingSectionCard(
-                        title = "Top Tracked Accounts",
+                        title = "Key Monitored Accounts",
                         icon = Icons.Default.AlternateEmail,
                         items = stats.topMentions.map { "${it.mention} (${it.count})" },
                         onItemClick = { mention ->
@@ -204,34 +190,37 @@ fun DashboardScreen(viewModel: MainViewModel) {
 @Composable
 fun HeaderCard(onRefresh: () -> Unit) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(18.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .size(9.dp)
+                            .clip(CircleShape)
                             .background(StatusGreen)
                     )
-                    Text("LIVE INTEL HUB", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusGreen)
+                    Text("ACTIVE SURVEILLANCE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusGreen, letterSpacing = 1.sp)
                 }
-                Text("Talkwalker OSINT Command", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Automated Threat Monitoring & Dissemination", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("OSINT Command Center", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                Text("National Tactical Monitoring & Threat Dissemination", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            IconButton(onClick = onRefresh) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+            IconButton(
+                onClick = onRefresh,
+                modifier = Modifier.size(42.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -247,21 +236,25 @@ fun MetricCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = modifier
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                Text(title, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Box(
+                    modifier = Modifier.size(32.dp).clip(CircleShape).background(color.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                }
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -273,14 +266,14 @@ fun AttackTypeBreakdownCard(stats: StatsResponse, onAttackClick: (String) -> Uni
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.FlashOn, contentDescription = null, tint = StatusRed, modifier = Modifier.size(20.dp))
-                Text("Attacks & Incident Categories", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.FlashOn, contentDescription = null, tint = StatusRed, modifier = Modifier.size(22.dp))
+                Text("Incident & Threat Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
             }
-            Text("Categorized threat and security incident distribution", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Categorized distribution of tracked security incidents. Tap to inspect filtered wire.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             stats.attackTypes.forEach { attack ->
                 val color = when (attack.attackType) {
@@ -292,22 +285,22 @@ fun AttackTypeBreakdownCard(stats: StatsResponse, onAttackClick: (String) -> Uni
                 }
                 Surface(
                     onClick = { onAttackClick(attack.attackType) },
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(modifier = Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(color))
-                            Text(attack.attackType.replace("_", " "), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(color))
+                            Text(attack.attackType.replace("_", " "), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
-                        Text("%,d posts".format(attack.count), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+                        Text("%,d items".format(attack.count), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
                     }
                 }
             }
@@ -327,22 +320,23 @@ fun TrendingSectionCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
             }
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(items) { item ->
                     AssistChip(
                         onClick = { onItemClick(item) },
-                        label = { Text(item, fontSize = 12.sp) },
+                        label = { Text(item, fontSize = 13.sp, fontWeight = FontWeight.Medium) },
                         colors = AssistChipDefaults.assistChipColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                        )
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.height(34.dp)
                     )
                 }
             }
@@ -361,7 +355,7 @@ fun ActivityTrendCard(stats: StatsResponse) {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.TrendingUp, contentDescription = null, tint = StatusGreen, modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = StatusGreen, modifier = Modifier.size(20.dp))
                 Text("15-Day Dissemination Volume", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 

@@ -14,8 +14,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -90,12 +92,12 @@ fun OsintPicsScreen(viewModel: MainViewModel) {
 
                 FilledTonalButton(
                     onClick = { showLexiconDialog = true },
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Lexicon / Prompt", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Lexicon / Terms", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -358,7 +360,7 @@ fun OsintPicsScreen(viewModel: MainViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Text("OSINT Lexicon & Prompts", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         }
                         IconButton(onClick = { showLexiconDialog = false }) {
@@ -470,23 +472,23 @@ fun ProminentPostSitrepCard(post: PostItem, viewModel: MainViewModel, onOpenMedi
     val mediaUrl = viewModel.apiClient.getMediaUrl(post.sentimentImagePath)
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
     ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(post.account ?: "@Unknown", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Surface(shape = RoundedCornerShape(4.dp), color = StatusAmber.copy(alpha = 0.15f)) {
-                    Text(post.detectProvince(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = StatusAmber, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(post.account ?: "@Unknown Source", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Surface(shape = RoundedCornerShape(6.dp), color = StatusAmber.copy(alpha = 0.15f)) {
+                    Text(post.detectProvince(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusAmber, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
                 }
             }
-            Text(post.content.orEmpty(), fontSize = 13.sp, lineHeight = 18.sp)
+            Text(post.content.orEmpty(), fontSize = 14.5.sp, lineHeight = 21.sp)
             if (mediaUrl != null) {
                 Surface(
                     onClick = onOpenMedia,
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.fillMaxWidth().height(100.dp)
+                    modifier = Modifier.fillMaxWidth().height(120.dp)
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -510,23 +512,23 @@ fun ProminentPostSitrepCard(post: PostItem, viewModel: MainViewModel, onOpenMedi
                 Button(
                     onClick = { com.noobdevs.osint.util.ShareHelper.sendPostToWhatsApp(context, post) },
                     colors = ButtonDefaults.buttonColors(containerColor = com.noobdevs.osint.ui.components.WhatsAppGreen),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(13.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("WhatsApp", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("WhatsApp", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
                 if (!post.url.isNullOrBlank()) {
                     OutlinedButton(
                         onClick = { MediaDownloadHelper.openVideoDownloaderOrTweet(context, post.url) },
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Video", fontSize = 11.sp)
+                        Text("Watch Video", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -538,22 +540,22 @@ fun ProminentPostSitrepCard(post: PostItem, viewModel: MainViewModel, onOpenMedi
 fun MajorClaimCard(claim: PostItem, onOpenBrowser: (String) -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth().border(1.dp, StatusRed.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth().border(1.dp, StatusRed.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
     ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(StatusRed))
-                    Text(claim.attackType?.replace("_", " ") ?: "SECURITY CLAIM", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = StatusRed)
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(StatusRed))
+                    Text(claim.attackType?.replace("_", " ") ?: "SECURITY CLAIM", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = StatusRed)
                 }
-                Text(claim.detectProvince(), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(claim.detectProvince(), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(claim.content.orEmpty(), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 3)
+            Text(claim.content.orEmpty(), fontSize = 14.sp, lineHeight = 20.sp, maxLines = 4)
             if (!claim.url.isNullOrBlank()) {
                 Text(
                     "Source: ${claim.url}",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.primary,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.clickable { onOpenBrowser(claim.url) }
