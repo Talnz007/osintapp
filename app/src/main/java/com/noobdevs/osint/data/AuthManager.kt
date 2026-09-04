@@ -17,11 +17,21 @@ class AuthManager(context: Context? = null) {
         private const val KEY_PASSWORD = "password"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_DARK_MODE = "dark_mode"
+        private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
+        private const val KEY_NOTIFICATION_INTERVAL = "notification_interval"
     }
 
     var isDarkMode: Boolean
         get() = prefs?.getBoolean(KEY_DARK_MODE, false) ?: false // LIGHT MODE by default!
         set(value) { prefs?.edit()?.putBoolean(KEY_DARK_MODE, value)?.apply() }
+
+    var notificationsEnabled: Boolean
+        get() = prefs?.getBoolean(KEY_NOTIFICATIONS_ENABLED, true) ?: true
+        set(value) { prefs?.edit()?.putBoolean(KEY_NOTIFICATIONS_ENABLED, value)?.apply() }
+
+    var notificationIntervalMinutes: Long
+        get() = prefs?.getLong(KEY_NOTIFICATION_INTERVAL, 15L) ?: 15L
+        set(value) { prefs?.edit()?.putLong(KEY_NOTIFICATION_INTERVAL, value)?.apply() }
 
     var baseUrl: String
         get() = prefs?.getString(KEY_BASE_URL, DEFAULT_BASE_URL)?.trimEnd('/') ?: DEFAULT_BASE_URL

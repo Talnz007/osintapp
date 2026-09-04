@@ -332,13 +332,24 @@ fun OsintPicsScreen(viewModel: MainViewModel) {
 
     // TACTICAL LEXICON & PROMPTS DIALOG ("What word is what")
     if (showLexiconDialog) {
+        var lexiconSearch by remember { mutableStateOf("") }
+        val filteredLexicon = remember(lexiconSearch) {
+            if (lexiconSearch.isBlank()) OsintLexicon.entries
+            else OsintLexicon.entries.filter {
+                it.code.contains(lexiconSearch, ignoreCase = true) ||
+                it.fullName.contains(lexiconSearch, ignoreCase = true) ||
+                it.description.contains(lexiconSearch, ignoreCase = true) ||
+                it.category.contains(lexiconSearch, ignoreCase = true)
+            }
+        }
+
         Dialog(onDismissRequest = { showLexiconDialog = false }) {
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.85f)
+                    .fillMaxHeight(0.88f)
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
@@ -361,27 +372,47 @@ fun OsintPicsScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
+                    // Search Lexicon
+                    OutlinedTextField(
+                        value = lexiconSearch,
+                        onValueChange = { lexiconSearch = it },
+                        placeholder = { Text("Filter terms (e.g. FAK, FAH, Ks, IBO, Zhob)...", fontSize = 11.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        trailingIcon = {
+                            if (lexiconSearch.isNotEmpty()) {
+                                IconButton(onClick = { lexiconSearch = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(14.dp))
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    )
+
                     HorizontalDivider()
 
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        item {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text("FUSION ASSESSMENT RULE", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                                    Text("Actor + Narrative Projection + Strategic Objective + Secondary Narrative + Desired Strategic Effect", fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                    Text("Max: 2 FAK, 2 FAH, 1 Other actor. Never exceed 45 words per assessment.", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (lexiconSearch.isBlank()) {
+                            item {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text("FUSION ASSESSMENT RULE", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                                        Text("Actor + Narrative Projection + Strategic Objective + Secondary Narrative + Desired Strategic Effect", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                        Text("Max: 2 FAK, 2 FAH, 1 Other actor. Never exceed 45 words per assessment.", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
                             }
                         }
 
-                        items(OsintLexicon.entries) { entry ->
+                        items(filteredLexicon) { entry ->
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),

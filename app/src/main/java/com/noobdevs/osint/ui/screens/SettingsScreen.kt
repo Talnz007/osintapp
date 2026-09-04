@@ -29,6 +29,7 @@ import com.noobdevs.osint.ui.theme.StatusRed
 fun SettingsScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val isDarkMode by viewModel.isDarkMode.collectAsState()
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
 
     var serverUrl by remember { mutableStateOf(viewModel.authManager.baseUrl) }
     var username by remember { mutableStateOf(viewModel.authManager.username) }
@@ -86,7 +87,94 @@ fun SettingsScreen(viewModel: MainViewModel) {
             }
         }
 
-        // 2. SERVER CONNECTION & AUTHENTICATION
+        // 2. TACTICAL THREAT RADAR & NOTIFICATIONS
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, if (notificationsEnabled) StatusRed.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = StatusRed)
+                        Text("Threat Radar & Notifications", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = (if (notificationsEnabled) StatusGreen else MaterialTheme.colorScheme.outline).copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            if (notificationsEnabled) "RADAR ACTIVE" else "DISABLED",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (notificationsEnabled) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                Text(
+                    "Background worker scans office threat feed every 15 minutes and issues heads-up alerts for Ambush, IED, Shaheed & High-Profile incidents.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Background Threat Monitor", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text(
+                            if (notificationsEnabled) "Auto-polling office intelligence wire" else "Notifications disabled",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = notificationsEnabled,
+                        onCheckedChange = { viewModel.toggleNotifications(it) }
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                // Actions: Test Notification & One-Time Sync
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = { viewModel.triggerTestAlert() },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Test Threat Alert", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    OutlinedButton(
+                        onClick = { viewModel.triggerOneTimeSync() },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Sync Office Now", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // 3. SERVER CONNECTION & AUTHENTICATION
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(16.dp),

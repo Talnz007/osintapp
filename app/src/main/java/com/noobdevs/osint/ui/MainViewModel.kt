@@ -33,12 +33,21 @@ sealed class UiState<out T> {
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     val authManager = AuthManager(application)
     val apiClient = OsintApiClient(authManager)
+    val bookmarksManager = com.noobdevs.osint.data.BookmarksManager(application)
+
+    val bookmarks: StateFlow<List<PostItem>> = bookmarksManager.bookmarksFlow
 
     private val _currentTab = MutableStateFlow(AppTab.DASHBOARD)
     val currentTab: StateFlow<AppTab> = _currentTab.asStateFlow()
 
     private val _isDarkMode = MutableStateFlow(authManager.isDarkMode)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+
+    private val _notificationsEnabled = MutableStateFlow(authManager.notificationsEnabled)
+    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+
+    private val _showOnlyBookmarks = MutableStateFlow(false)
+    val showOnlyBookmarks: StateFlow<Boolean> = _showOnlyBookmarks.asStateFlow()
 
     private val _statsState = MutableStateFlow<UiState<StatsResponse>>(UiState.Loading)
     val statsState: StateFlow<UiState<StatsResponse>> = _statsState.asStateFlow()
@@ -80,9 +89,62 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val decksState: StateFlow<UiState<List<DeckItem>>> = _decksState.asStateFlow()
 
     init {
+        com.noobdevs.osint.util.NotificationHelper.createNotificationChannel(application)
+        com.noobdevs.osint.util.IntelSyncWorker.schedulePeriodicSync(application)
         loadDashboardStats()
         loadPosts(page = 1, append = false)
         loadDecks()
+    }
+
+    fun isBookmarked(postId: Long): Boolean = bookmarksManager.isBookmarked(postId)
+
+    fun toggleBookmark(post: PostItem) {
+        val added = bookmarksManager.toggleBookmark(post)
+        val msg = if (added) "Saved to Evidence Bag" else "Removed from Evidence Bag"
+        Toast.makeText(getApplication(), msg, Toast.LENGTH_SHORT).show()
+    }
+
+    fun toggleShowOnlyBookmarks() {
+        _showOnlyBookmarks.value = !_showOnlyBookmarks.value
+    }
+
+    fun exportEvidenceDossier() {
+        val saved = bookmarks.value
+        if (saved.isEmpty()) {
+            Toast.makeText(getApplication(), "Evidence Bag is empty. Bookmark posts first!", Toast.LENGTH_SHORT).show()
+            return
+        }
+        com.noobdevs.osint.util.ShareHelper.shareEvidenceDossier(getApplication(), saved)
+    }
+
+    fun sharePost(post: PostItem) {
+        com.noobdevs.osint.util.ShareHelper.sharePostAsMilitarySitrep(getApplication(), post)
+    }
+
+    fun triggerTestAlert() {
+        com.noobdevs.osint.util.NotificationHelper.showIncidentNotification(
+            getApplication(),
+            title = "Balochistan [AMBUSH FIRE Alert]",
+            body = "Security Forces intercepted kinetic movement near Kech sector. 2x suspects apprehended."
+        )
+        Toast.makeText(getApplication(), "Alert notification sent to system tray!", Toast.LENGTH_SHORT).show()
+    }
+
+    fun triggerOneTimeSync() {
+        com.noobdevs.osint.util.IntelSyncWorker.triggerOneTimeSync(getApplication())
+        Toast.makeText(getApplication(), "Polling office server in background...", Toast.LENGTH_SHORT).show()
+    }
+
+    fun toggleNotifications(enabled: Boolean) {
+        authManager.notificationsEnabled = enabled
+        _notificationsEnabled.value = enabled
+        if (enabled) {
+            com.noobdevs.osint.util.IntelSyncWorker.schedulePeriodicSync(getApplication())
+            Toast.makeText(getApplication(), "Tactical Threat Radar activated", Toast.LENGTH_SHORT).show()
+        } else {
+            com.noobdevs.osint.util.IntelSyncWorker.cancelPeriodicSync(getApplication())
+            Toast.makeText(getApplication(), "Tactical Threat Radar deactivated", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun setTab(tab: AppTab) {

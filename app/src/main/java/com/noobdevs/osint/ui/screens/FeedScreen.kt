@@ -41,6 +41,8 @@ import com.noobdevs.osint.util.MediaDownloadHelper
 fun FeedScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val posts by viewModel.posts.collectAsState()
+    val bookmarks by viewModel.bookmarks.collectAsState()
+    val showOnlyBookmarks by viewModel.showOnlyBookmarks.collectAsState()
     val isLoading by viewModel.isPostsLoading.collectAsState()
     val error by viewModel.postsError.collectAsState()
     val selectedProvince by viewModel.selectedProvince.collectAsState()
@@ -55,10 +57,11 @@ fun FeedScreen(viewModel: MainViewModel) {
     val provinces = listOf("All", "Balochistan", "KPK", "AJK / Kashmir", "Sindh", "Punjab", "International")
     val attackTypes = listOf("ALL", "AMBUSH_FIRE", "IED_EXPLOSIVE", "CIVIL_UNREST", "SABOTAGE", "GENERAL")
 
-    // Filter posts by province locally
-    val filteredPosts = remember(posts, selectedProvince) {
-        if (selectedProvince == "All") posts
-        else posts.filter { it.detectProvince().equals(selectedProvince, ignoreCase = true) }
+    // Filter posts by evidence bag selection and province
+    val basePosts = if (showOnlyBookmarks) bookmarks else posts
+    val filteredPosts = remember(basePosts, selectedProvince) {
+        if (selectedProvince == "All") basePosts
+        else basePosts.filter { it.detectProvince().equals(selectedProvince, ignoreCase = true) }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -93,6 +96,45 @@ fun FeedScreen(viewModel: MainViewModel) {
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // Evidence Bag & Dossier Action Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = showOnlyBookmarks,
+                    onClick = { viewModel.toggleShowOnlyBookmarks() },
+                    leadingIcon = {
+                        Icon(
+                            if (showOnlyBookmarks) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = null,
+                            tint = if (showOnlyBookmarks) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    label = { Text("Evidence Bag (${bookmarks.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = StatusAmber.copy(alpha = 0.2f),
+                        selectedLabelColor = StatusAmber
+                    ),
+                    modifier = Modifier.height(30.dp)
+                )
+
+                if (showOnlyBookmarks && bookmarks.isNotEmpty()) {
+                    FilledTonalButton(
+                        onClick = { viewModel.exportEvidenceDossier() },
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.height(30.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Export Dossier", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
 
             // 1. TIME RANGE FILTERS (FROM WEBSITE)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -182,6 +224,41 @@ fun FeedScreen(viewModel: MainViewModel) {
                             Button(onClick = { viewModel.loadPosts(1, append = false) }) {
                                 Text("Retry")
                             }
+                        }
+                    }
+                }
+            }
+
+            if (filteredPosts.isEmpty() && !isLoading && error == null) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                if (showOnlyBookmarks) Icons.Default.BookmarkBorder else Icons.Default.SearchOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                if (showOnlyBookmarks) "Evidence Bag is Empty" else "No matching intelligence records",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                if (showOnlyBookmarks) "Bookmark posts from the feed using the bookmark icon to collect them in your Evidence Bag."
+                                else "Try clearing search filters or changing the time range.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
                         }
                     }
                 }
@@ -448,16 +525,15 @@ fun EnhancedPostCard(
                     }
                 }
             }
-
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-            // Action Row with Video Downloader
+            // Action Row with Video Downloader, Save Pic, Bookmark, and Sitrep Share
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     // Video Downloader Trigger
                     if (!post.url.isNullOrBlank()) {
                         Button(
@@ -484,9 +560,35 @@ fun EnhancedPostCard(
                     }
                 }
 
-                if (!post.url.isNullOrBlank()) {
-                    IconButton(onClick = { onOpenBrowser(post.url) }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.OpenInNew, contentDescription = "Open Tweet", modifier = Modifier.size(18.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val isSaved = viewModel.isBookmarked(post.id)
+                    IconButton(
+                        onClick = { viewModel.toggleBookmark(post) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Save Evidence",
+                            tint = if (isSaved) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { viewModel.sharePost(post) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = "Share SITREP",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    if (!post.url.isNullOrBlank()) {
+                        IconButton(onClick = { onOpenBrowser(post.url) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.OpenInNew, contentDescription = "Open Tweet", modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             }
