@@ -500,6 +500,36 @@ fun ProminentPostSitrepCard(post: PostItem, viewModel: MainViewModel, onOpenMedi
                     )
                 }
             }
+
+            val context = LocalContext.current
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { com.noobdevs.osint.util.ShareHelper.sendPostToWhatsApp(context, post) },
+                    colors = ButtonDefaults.buttonColors(containerColor = com.noobdevs.osint.ui.components.WhatsAppGreen),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("WhatsApp", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+
+                if (!post.url.isNullOrBlank()) {
+                    OutlinedButton(
+                        onClick = { MediaDownloadHelper.openVideoDownloaderOrTweet(context, post.url) },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Video", fontSize = 11.sp)
+                    }
+                }
+            }
         }
     }
 }

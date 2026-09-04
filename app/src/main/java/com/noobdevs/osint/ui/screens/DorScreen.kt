@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,8 +26,10 @@ import com.noobdevs.osint.data.DeckItem
 import com.noobdevs.osint.data.PostItem
 import com.noobdevs.osint.ui.MainViewModel
 import com.noobdevs.osint.ui.UiState
+import com.noobdevs.osint.ui.components.WhatsAppGreen
 import com.noobdevs.osint.ui.theme.StatusGreen
 import com.noobdevs.osint.ui.theme.StatusPurple
+import com.noobdevs.osint.util.ShareHelper
 
 @Composable
 fun DorScreen(viewModel: MainViewModel) {
@@ -210,6 +213,7 @@ fun DeckCard(deck: DeckItem, onDownload: () -> Unit) {
 
 @Composable
 fun DorBulletinCard(post: PostItem, onCopy: (String) -> Unit) {
+    val context = LocalContext.current
     val rawText = post.whatsappMessageSent.orEmpty()
 
     Card(
@@ -249,10 +253,24 @@ fun DorBulletinCard(post: PostItem, onCopy: (String) -> Unit) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Source: ${post.account ?: "Regional News"}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(post.scrapedDate?.take(16)?.replace("T", " ") ?: "", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column {
+                    Text("Source: ${post.account ?: "Regional News"}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(post.scrapedDate?.take(16)?.replace("T", " ") ?: "", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                Button(
+                    onClick = { ShareHelper.sendBulletinToWhatsApp(context, rawText) },
+                    colors = ButtonDefaults.buttonColors(containerColor = WhatsAppGreen),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(Icons.Default.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("WhatsApp", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

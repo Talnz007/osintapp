@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,8 +34,11 @@ import com.noobdevs.osint.data.PipelineFilter
 import com.noobdevs.osint.data.PostItem
 import com.noobdevs.osint.data.TimeRange
 import com.noobdevs.osint.ui.MainViewModel
+import com.noobdevs.osint.ui.components.InbuiltVideoPlayerModal
+import com.noobdevs.osint.ui.components.WhatsAppGreen
 import com.noobdevs.osint.ui.theme.*
 import com.noobdevs.osint.util.MediaDownloadHelper
+import com.noobdevs.osint.util.ShareHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -294,91 +298,13 @@ fun FeedScreen(viewModel: MainViewModel) {
         }
     }
 
-    // DEDICATED VIDEO DOWNLOADER & MEDIA GRABBER DIALOG
+    // INBUILT VIDEO PLAYER & MEDIA MODAL
     postForVideoDownloader?.let { post ->
-        val tweetUrl = post.url.orEmpty()
-        Dialog(onDismissRequest = { postForVideoDownloader = null }) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth().wrapContentHeight()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.DownloadForOffline, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Text("Video & Media Downloader", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        }
-                        IconButton(onClick = { postForVideoDownloader = null }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
-                        }
-                    }
-
-                    Text(
-                        "Download direct video stream, audio, or open with external video grabber",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("SOURCE URL", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text(tweetUrl, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 2)
-                        }
-                    }
-
-                    // Action 1: Open Video / Tweet
-                    Button(
-                        onClick = {
-                            MediaDownloadHelper.openVideoDownloaderOrTweet(context, tweetUrl)
-                            postForVideoDownloader = null
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.PlayCircleFilled, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Download Video via Browser / App")
-                    }
-
-                    // Action 2: Copy Direct Link
-                    OutlinedButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Tweet Video URL", tweetUrl))
-                            Toast.makeText(context, "Copied link to clipboard", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Copy Video URL")
-                    }
-
-                    // Action 3: Save Intercepted Image (if present)
-                    if (post.hasMedia) {
-                        FilledTonalButton(
-                            onClick = {
-                                viewModel.downloadImage(post)
-                                postForVideoDownloader = null
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Image, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Save High-Res Intercepted Picture")
-                        }
-                    }
-                }
-            }
-        }
+        InbuiltVideoPlayerModal(
+            post = post,
+            viewModel = viewModel,
+            onDismiss = { postForVideoDownloader = null }
+        )
     }
 }
 
@@ -527,35 +453,47 @@ fun EnhancedPostCard(
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-            // Action Row with Video Downloader, Save Pic, Bookmark, and Sitrep Share
+            // Action Row with WhatsApp, Inbuilt Video Player, Save Pic, Bookmark, and Share
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    // Video Downloader Trigger
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // DIRECT WHATSAPP BUTTON (CORPORATE DISPATCH)
+                    Button(
+                        onClick = { ShareHelper.sendPostToWhatsApp(context, post) },
+                        colors = ButtonDefaults.buttonColors(containerColor = WhatsAppGreen),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("WhatsApp", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Inbuilt Video Player Trigger
                     if (!post.url.isNullOrBlank()) {
-                        Button(
+                        OutlinedButton(
                             onClick = onOpenVideoDownloader,
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Download Vid", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("Play / Vid", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
                     if (mediaUrl != null) {
                         FilledTonalButton(
                             onClick = { viewModel.downloadImage(post) },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Save Pic", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Pic", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -587,7 +525,7 @@ fun EnhancedPostCard(
 
                     if (!post.url.isNullOrBlank()) {
                         IconButton(onClick = { onOpenBrowser(post.url) }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.OpenInNew, contentDescription = "Open Tweet", modifier = Modifier.size(18.dp))
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open External", modifier = Modifier.size(18.dp))
                         }
                     }
                 }

@@ -34,6 +34,52 @@ object ShareHelper {
         context.startActivity(shareIntent)
     }
 
+    fun sendPostToWhatsApp(context: Context, post: PostItem) {
+        val province = post.detectProvince()
+        val attackType = post.attackType?.replace("_", " ") ?: "GENERAL"
+        val cleanContent = post.content.orEmpty()
+        val url = post.url.orEmpty()
+
+        val text = buildString {
+            append("AOA Sir,\n\n")
+            append("🚨 *OSINT TACTICAL SITREP – $province [$attackType]*\n\n")
+            append("👤 *Account*: ${post.account ?: "@Unknown"}\n")
+            append("📅 *Intercepted*: ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}\n\n")
+            append("📝 *Intel Details*:\n$cleanContent\n\n")
+            if (url.isNotEmpty()) {
+                append("🔗 *Source Link*: $url\n\n")
+            }
+            append("Transmitted via OSINT Command Center\nRegards")
+        }
+        dispatchDirectWhatsApp(context, text)
+    }
+
+    fun sendBulletinToWhatsApp(context: Context, bulletinText: String) {
+        dispatchDirectWhatsApp(context, bulletinText)
+    }
+
+    fun dispatchDirectWhatsApp(context: Context, text: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            setPackage("com.whatsapp")
+            putExtra(Intent.EXTRA_TEXT, text)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback to WhatsApp Business or general share chooser
+            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            val chooser = Intent.createChooser(fallbackIntent, "Send via WhatsApp or other app...")
+            chooser.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(chooser)
+        }
+    }
+
     fun shareRawBulletin(context: Context, bulletinText: String) {
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
