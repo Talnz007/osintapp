@@ -20,3 +20,4 @@ iosApp/build/
 *.xcworkspace
 xcuserdata/
 *.PNG
+*_log.txt

@@ -86,7 +86,9 @@ fun MainViewController(): UIViewController {
         AppLogger.logCrash(throwable)
     }
 
-    return ComposeUIViewController {
+    return ComposeUIViewController(configure = {
+        enforceStrictPlistSanityCheck = false
+    }) {
         AppLogger.log("COMPOSE", "Rendering Compose root")
         val storeOwner = remember { IosViewModelStoreOwner() }
         CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
