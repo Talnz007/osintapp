@@ -3,6 +3,8 @@ package com.noobdevs.osint.platform
 import io.ktor.http.encodeURLParameter
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import platform.Foundation.NSData
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
@@ -29,13 +31,12 @@ actual object PlatformActions {
     }
 
     actual fun sendWhatsApp(text: String) {
-        val encoded = text.encodeURLParameter()
-        val url = NSURL.URLWithString("whatsapp://send?text=$encoded")
-        if (url != null && UIApplication.sharedApplication.canOpenURL(url)) {
-            UIApplication.sharedApplication.openURL(url)
+        val encodedText = text.encodeURLParameter()
+        val whatsappUrl = NSURL.URLWithString("whatsapp://send?text=$encodedText")
+        if (whatsappUrl != null && UIApplication.sharedApplication.canOpenURL(whatsappUrl)) {
+            UIApplication.sharedApplication.openURL(whatsappUrl)
         } else {
-            // Fallback to general share sheet if WhatsApp is not installed
-            shareText(text, "Share SITREP")
+            shareText(text, "Share via WhatsApp")
         }
     }
 
@@ -54,8 +55,12 @@ actual object PlatformActions {
             val documentsUrl = fileManager.URLsForDirectory(NSDocumentDirectory, NSUserDomainMask).first() as NSURL
             val fileUrl = documentsUrl.URLByAppendingPathComponent(filename) ?: return Result.failure(Exception("Invalid file URL"))
 
-            val data = bytes.usePinned { pinned ->
-                NSData.dataWithBytes(pinned.addressOf(0), bytes.size.toULong())
+            val data = if (bytes.isNotEmpty()) {
+                bytes.usePinned { pinned ->
+                    NSData.dataWithBytes(pinned.addressOf(0), bytes.size.toULong())
+                }
+            } else {
+                NSData()
             }
             data.writeToURL(fileUrl, atomically = true)
             Result.success(fileUrl.path ?: filename)

@@ -1,5 +1,7 @@
 package com.noobdevs.osint.platform
 
+import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
 import platform.UserNotifications.UNAuthorizationOptionAlert
 import platform.UserNotifications.UNAuthorizationOptionBadge
 import platform.UserNotifications.UNAuthorizationOptionSound
@@ -34,7 +36,7 @@ actual object ThreatAlertManager {
 
         // Trigger in 1 second
         val trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(1.0, repeats = false)
-        val id = if (postId != 0L) "alert_$postId" else "alert_${platform.Foundation.NSDate().timeIntervalSince1970}"
+        val id = if (postId != 0L) "alert_$postId" else "alert_${NSDate().timeIntervalSince1970}"
         val request = UNNotificationRequest.requestWithIdentifier(id, content, trigger)
 
         center.addNotificationRequest(request) { _ -> }
