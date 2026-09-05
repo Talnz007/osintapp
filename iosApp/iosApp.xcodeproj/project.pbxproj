@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A100000129B7F10000000001 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000229B7F10000000001 /* iOSApp.swift */; };
 		A100000329B7F10000000001 /* ComposeApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A100000429B7F10000000001 /* ComposeApp.framework */; };
+		A100001829B7F10000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A100001929B7F10000000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -16,6 +17,7 @@
 		A100000429B7F10000000001 /* ComposeApp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ComposeApp.framework; path = "../composeApp/build/xcode-frameworks/Release/iphoneos/ComposeApp.framework"; sourceTree = "<group>"; };
 		A100000529B7F10000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A100000629B7F10000000001 /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A100001929B7F10000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +46,7 @@
 			children = (
 				A100000229B7F10000000001 /* iOSApp.swift */,
 				A100000529B7F10000000001 /* Info.plist */,
+				A100001929B7F10000000001 /* Assets.xcassets */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -74,6 +77,7 @@
 				A100000E29B7F10000000001 /* Compile Kotlin */,
 				A100000F29B7F10000000001 /* Sources */,
 				A100000729B7F10000000001 /* Frameworks */,
+				A100001729B7F10000000001 /* Resources */,
 				A100001029B7F10000000001 /* Embed Frameworks */,
 			);
 			buildRules = (
@@ -162,6 +166,17 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A100001729B7F10000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100001829B7F10000000001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		A100001329B7F10000000001 /* Debug */ = {

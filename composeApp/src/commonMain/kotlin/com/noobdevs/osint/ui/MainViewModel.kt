@@ -100,10 +100,18 @@ class MainViewModel(
     val decksState: StateFlow<UiState<List<DeckItem>>> = _decksState.asStateFlow()
 
     init {
-        ThreatAlertManager.scheduleBackgroundSync()
-        loadDashboardStats()
-        loadPosts(page = 1, append = false)
-        loadDecks()
+        try {
+            ThreatAlertManager.scheduleBackgroundSync()
+        } catch (e: Throwable) {
+            println("ThreatAlertManager init warning: ${e.message}")
+        }
+        try {
+            loadDashboardStats()
+            loadPosts(page = 1, append = false)
+            loadDecks()
+        } catch (e: Throwable) {
+            println("Initial data fetch warning: ${e.message}")
+        }
     }
 
     fun isBookmarked(postId: Long): Boolean = bookmarksManager.isBookmarked(postId)
