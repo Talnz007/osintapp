@@ -35,13 +35,13 @@ jobs:
 
       - name: Build KMP Apple Framework for iOS
         run: |
-          ./gradlew :composeApp:assembleComposeAppReleaseXCFramework
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon
           mkdir -p composeApp/build/xcode-frameworks/Release/iphoneos
-          cp -R composeApp/build/XCFrameworks/release/ComposeApp.xcframework/ios-arm64/ComposeApp.framework composeApp/build/xcode-frameworks/Release/iphoneos/
+          cp -R composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework composeApp/build/xcode-frameworks/Release/iphoneos/
 
       - name: Archive iOS Application (Without Signing)
         run: |
-          xcodebuild clean archive \
+          xcodebuild archive \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Release \
