@@ -14,31 +14,43 @@ import platform.UserNotifications.UNUserNotificationCenter
 actual object ThreatAlertManager {
 
     actual fun scheduleBackgroundSync() {
-        val center = UNUserNotificationCenter.currentNotificationCenter()
-        center.requestAuthorizationWithOptions(
-            UNAuthorizationOptionAlert or UNAuthorizationOptionSound or UNAuthorizationOptionBadge
-        ) { granted, _ ->
-            // Background notification permissions granted
+        try {
+            val center = UNUserNotificationCenter.currentNotificationCenter()
+            center.requestAuthorizationWithOptions(
+                UNAuthorizationOptionAlert or UNAuthorizationOptionSound or UNAuthorizationOptionBadge
+            ) { granted, error ->
+                // Background notification permissions granted
+            }
+        } catch (e: Throwable) {
+            println("ThreatAlertManager.scheduleBackgroundSync error: ${e.message}")
         }
     }
 
     actual fun cancelBackgroundSync() {
-        UNUserNotificationCenter.currentNotificationCenter().removeAllPendingNotificationRequests()
+        try {
+            UNUserNotificationCenter.currentNotificationCenter().removeAllPendingNotificationRequests()
+        } catch (e: Throwable) {
+            println("ThreatAlertManager.cancelBackgroundSync error: ${e.message}")
+        }
     }
 
     actual fun triggerNotification(title: String, body: String, postId: Long) {
-        val center = UNUserNotificationCenter.currentNotificationCenter()
-        val content = UNMutableNotificationContent().apply {
-            setTitle("🚨 $title")
-            setBody(body)
-            setSound(UNNotificationSound.defaultSound)
+        try {
+            val center = UNUserNotificationCenter.currentNotificationCenter()
+            val content = UNMutableNotificationContent().apply {
+                setTitle("🚨 $title")
+                setBody(body)
+                setSound(UNNotificationSound.defaultSound)
+            }
+
+            // Trigger in 1 second
+            val trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(1.0, repeats = false)
+            val id = if (postId != 0L) "alert_$postId" else "alert_${NSDate().timeIntervalSince1970}"
+            val request = UNNotificationRequest.requestWithIdentifier(id, content, trigger)
+
+            center.addNotificationRequest(request) { _ -> }
+        } catch (e: Throwable) {
+            println("ThreatAlertManager.triggerNotification error: ${e.message}")
         }
-
-        // Trigger in 1 second
-        val trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(1.0, repeats = false)
-        val id = if (postId != 0L) "alert_$postId" else "alert_${NSDate().timeIntervalSince1970}"
-        val request = UNNotificationRequest.requestWithIdentifier(id, content, trigger)
-
-        center.addNotificationRequest(request) { _ -> }
     }
 }

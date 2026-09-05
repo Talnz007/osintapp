@@ -19,3 +19,4 @@ graphify-out/
 iosApp/build/
 *.xcworkspace
 xcuserdata/
+*.PNG

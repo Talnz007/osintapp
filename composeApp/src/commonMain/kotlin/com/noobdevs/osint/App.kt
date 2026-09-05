@@ -21,7 +21,7 @@ import com.noobdevs.osint.ui.screens.*
 import com.noobdevs.osint.ui.theme.OSINTTheme
 
 @Composable
-fun App(viewModel: MainViewModel = viewModel { MainViewModel() }) {
+fun App(viewModel: MainViewModel = remember { MainViewModel() }) {
     val isDarkMode by viewModel.isDarkMode.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
