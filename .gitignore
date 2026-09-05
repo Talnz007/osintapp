@@ -7,10 +7,15 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
+build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 .idea/deploymentTargetSelector.xml
+graphify-out/
+.kotlin/
+.jdks/
+iosApp/build/
+*.xcworkspace
+xcuserdata/
