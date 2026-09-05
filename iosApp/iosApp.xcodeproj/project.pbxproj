@@ -226,11 +226,14 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 					"$(SRCROOT)/../composeApp/build/bin/iosSimulatorArm64/$(CONFIGURATION)Framework",
 					"$(SRCROOT)/../composeApp/build/bin/iosArm64/$(CONFIGURATION)Framework",
+					"$(SRCROOT)/../composeApp/build/XCFrameworks/release/ComposeApp.xcframework/ios-arm64",
+					"$(SRCROOT)/../composeApp/build/XCFrameworks/debug/ComposeApp.xcframework/ios-arm64_x86_64-simulator",
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
@@ -255,11 +258,14 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 					"$(SRCROOT)/../composeApp/build/bin/iosSimulatorArm64/$(CONFIGURATION)Framework",
 					"$(SRCROOT)/../composeApp/build/bin/iosArm64/$(CONFIGURATION)Framework",
+					"$(SRCROOT)/../composeApp/build/XCFrameworks/release/ComposeApp.xcframework/ios-arm64",
+					"$(SRCROOT)/../composeApp/build/XCFrameworks/debug/ComposeApp.xcframework/ios-arm64_x86_64-simulator",
 				);
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
