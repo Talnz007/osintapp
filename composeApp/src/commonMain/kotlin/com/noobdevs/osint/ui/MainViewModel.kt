@@ -16,9 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+
 enum class AppTab(val label: String) {
     DASHBOARD("Overview"),
     FEED("Intel Feed"),
+    THREAT_MAP("Threat Map"),
     OSINT_PICS("OSINT Media"),
     DOR("DOR Reports"),
     SETTINGS("Settings")
@@ -95,6 +100,58 @@ class MainViewModel(
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _selectedTheater = MutableStateFlow(TheaterCategory.ALL)
+    val selectedTheater: StateFlow<TheaterCategory> = _selectedTheater.asStateFlow()
+
+    private val _selectedActivity = MutableStateFlow(ActivityCategory.ALL)
+    val selectedActivity: StateFlow<ActivityCategory> = _selectedActivity.asStateFlow()
+
+    private val _mapSortOrder = MutableStateFlow(MapSortOrder.NEWEST)
+    val mapSortOrder: StateFlow<MapSortOrder> = _mapSortOrder.asStateFlow()
+
+    fun setMapSortOrder(order: MapSortOrder) {
+        _mapSortOrder.value = order
+    }
+
+    val threatMarkers: StateFlow<List<ThreatMapMarker>> = combine(
+        _posts,
+        _selectedTheater,
+        _selectedActivity,
+        _mapSortOrder,
+        _selectedTimeRange
+    ) { postsList, theater, activity, sortOrder, _ ->
+        val mapped = postsList.mapNotNull { post ->
+            val coords = post.detectLocationCoordinates() ?: return@mapNotNull null
+            val postTheater = post.detectTheater()
+            val postActivity = post.detectActivityType()
+            if (theater != TheaterCategory.ALL && postTheater != theater) return@mapNotNull null
+            if (activity != ActivityCategory.ALL && postActivity != activity) return@mapNotNull null
+
+            ThreatMapMarker(
+                id = post.id,
+                title = post.detectLocationName() + " (" + postTheater.shortCode + ")",
+                snippet = (post.content ?: post.whatsappMessageSent.orEmpty()).take(160),
+                latitude = coords.first,
+                longitude = coords.second,
+                district = post.detectLocationName(),
+                theater = postTheater,
+                activityType = postActivity,
+                date = post.scrapedDate.orEmpty(),
+                post = post
+            )
+        }
+
+        when (sortOrder) {
+            MapSortOrder.NEWEST -> mapped.sortedByDescending { it.date }
+            MapSortOrder.OLDEST -> mapped.sortedBy { it.date }
+            MapSortOrder.CRITICAL -> mapped.sortedWith(
+                compareByDescending<ThreatMapMarker> { it.post.isHighProfile == 1 }
+                    .thenByDescending { it.activityType == ActivityCategory.ATTACKS }
+                    .thenByDescending { it.date }
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _decksState = MutableStateFlow<UiState<List<DeckItem>>>(UiState.Loading)
     val decksState: StateFlow<UiState<List<DeckItem>>> = _decksState.asStateFlow()
@@ -200,8 +257,13 @@ class MainViewModel(
         _selectedProvince.value = province
     }
 
-    fun setAttackTypeFilter(type: String) {
-        _selectedAttackType.value = type
+    fun setTheaterFilter(theater: TheaterCategory) {
+        _selectedTheater.value = theater
+        loadPosts(page = 1, append = false)
+    }
+
+    fun setActivityFilter(activity: ActivityCategory) {
+        _selectedActivity.value = activity
         loadPosts(page = 1, append = false)
     }
 
@@ -224,17 +286,17 @@ class MainViewModel(
             _isPostsLoading.value = true
             _postsError.value = null
 
-            val attackFilter = if (_selectedAttackType.value == "ALL") null else _selectedAttackType.value
-            val category = if (_selectedCategory.value == "ALL") null else _selectedCategory.value
+            val theater = if (_selectedTheater.value == TheaterCategory.ALL) null else _selectedTheater.value.shortCode
+            val activity = if (_selectedActivity.value == ActivityCategory.ALL) null else _selectedActivity.value.shortCode
             val pipeline = _selectedPipeline.value.value
             val hours = _selectedTimeRange.value.hours
             val search = if (_searchQuery.value.isBlank()) null else _searchQuery.value
 
             apiClient.getPosts(
                 page = page,
-                limit = 25,
-                category = category,
-                attackType = attackFilter,
+                limit = 100,
+                category = theater,
+                attackType = activity,
                 search = search,
                 pipeline = pipeline,
                 hours = hours

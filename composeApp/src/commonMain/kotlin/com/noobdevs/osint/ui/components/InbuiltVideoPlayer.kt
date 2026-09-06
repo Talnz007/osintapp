@@ -1,5 +1,7 @@
 package com.noobdevs.osint.ui.components
 
+import androidx.compose.material.icons.automirrored.filled.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -95,8 +97,23 @@ fun InbuiltVideoPlayerModal(
                         }
                     }
 
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (videoUrl.isNotBlank()) {
+                            FilledTonalButton(
+                                onClick = {
+                                    PlatformActions.openPostInXApp(videoUrl)
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Open in X", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
                     }
                 }
 
@@ -130,7 +147,13 @@ fun InbuiltVideoPlayerModal(
                     if (playerMode == 0) {
                         PlatformVideoPlayer(url = videoUrl, modifier = Modifier.fillMaxSize())
                     } else {
-                        PlatformWebView(url = videoUrl, modifier = Modifier.fillMaxSize())
+                        val tweetId = Regex("""status/(\d+)""").find(videoUrl)?.groupValues?.getOrNull(1)
+                        val targetWebUrl = if (tweetId != null) {
+                            "https://platform.twitter.com/embed/Tweet.html?id=$tweetId&theme=dark"
+                        } else {
+                            videoUrl
+                        }
+                        PlatformWebView(url = targetWebUrl, modifier = Modifier.fillMaxSize())
                     }
                 }
 
@@ -181,7 +204,7 @@ fun InbuiltVideoPlayerModal(
                         modifier = Modifier.weight(1.3f)
                     ) {
                         Icon(
-                            Icons.Default.Send,
+                            Icons.AutoMirrored.Filled.Send,
                             contentDescription = "WhatsApp",
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)

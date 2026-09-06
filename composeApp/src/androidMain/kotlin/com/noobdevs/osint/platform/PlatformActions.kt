@@ -58,6 +58,40 @@ actual object PlatformActions {
         } catch (_: Exception) {}
     }
 
+    actual fun openPostInXApp(url: String) {
+        if (url.isBlank()) return
+        val ctx = AppContextProvider.context
+        val tweetId = Regex("""status/(\d+)""").find(url)?.groupValues?.getOrNull(1)
+        if (tweetId != null) {
+            try {
+                val twitterAppIntent = Intent(Intent.ACTION_VIEW, Uri.parse("twitter://status?status_id=$tweetId")).apply {
+                    setPackage("com.twitter.android")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                ctx.startActivity(twitterAppIntent)
+                return
+            } catch (_: Exception) {
+                try {
+                    val genericTwitterIntent = Intent(Intent.ACTION_VIEW, Uri.parse("twitter://status?status_id=$tweetId")).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    ctx.startActivity(genericTwitterIntent)
+                    return
+                } catch (_: Exception) {
+                    try {
+                        val httpTwitterIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://x.com/i/status/$tweetId")).apply {
+                            setPackage("com.twitter.android")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        ctx.startActivity(httpTwitterIntent)
+                        return
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+        openUrl(url)
+    }
+
     actual fun copyToClipboard(text: String, label: String) {
         val ctx = AppContextProvider.context
         val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

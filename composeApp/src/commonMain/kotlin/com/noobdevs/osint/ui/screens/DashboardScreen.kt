@@ -30,10 +30,24 @@ import com.noobdevs.osint.ui.MainViewModel
 import com.noobdevs.osint.ui.UiState
 import com.noobdevs.osint.ui.theme.*
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.noobdevs.osint.data.models.ActivityCategory
+import com.noobdevs.osint.data.models.PostItem
+import com.noobdevs.osint.data.models.TheaterCategory
+import com.noobdevs.osint.ui.components.SitrepPreviewDialog
+
+data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(viewModel: MainViewModel) {
     val statsState by viewModel.statsState.collectAsState()
+    val posts by viewModel.posts.collectAsState()
     val selectedTimeRange by viewModel.selectedTimeRange.collectAsState()
+    var timeDropdownExpanded by remember { mutableStateOf(false) }
+    var showSitrepDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -42,24 +56,77 @@ fun DashboardScreen(viewModel: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 36.dp)
     ) {
+        // Strategic Threat Level Gauge & Executive Action
         item {
-            HeaderCard(onRefresh = { viewModel.loadDashboardStats() })
+            val stats = (statsState as? UiState.Success)?.data
+            ThreatAdvisoryCard(
+                posts = posts,
+                stats = stats,
+                onRefresh = { viewModel.loadDashboardStats() },
+                onGenerateSitrep = { showSitrepDialog = true }
+            )
         }
 
-        // Clean Segmented Time Window
+        // Minimalist Corporate Dropdown Time Window Selector
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TimeRange.entries.forEach { tr ->
-                    FilterChip(
-                        selected = selectedTimeRange == tr,
-                        onClick = { viewModel.setTimeRange(tr) },
-                        label = { Text(tr.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
-                        modifier = Modifier.weight(1f).height(36.dp)
-                    )
+                Text(
+                    "REPORTING WINDOW",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        letterSpacing = 1.1.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = timeDropdownExpanded,
+                    onExpandedChange = { timeDropdownExpanded = !timeDropdownExpanded },
+                    modifier = Modifier.width(180.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                selectedTimeRange.label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                        }
+                    }
+
+                    ExposedDropdownMenu(
+                        expanded = timeDropdownExpanded,
+                        onDismissRequest = { timeDropdownExpanded = false }
+                    ) {
+                        TimeRange.entries.forEach { tr ->
+                            DropdownMenuItem(
+                                text = { Text(tr.label, fontSize = 12.sp) },
+                                onClick = {
+                                    viewModel.setTimeRange(tr)
+                                    timeDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -147,10 +214,17 @@ fun DashboardScreen(viewModel: MainViewModel) {
                 }
 
                 item {
-                    AttackTypeBreakdownCard(stats = stats, onAttackClick = { type ->
-                        viewModel.setAttackTypeFilter(type)
-                        viewModel.setTab(AppTab.FEED)
-                    })
+                    OperationalThreatMatrixCard(
+                        stats = stats,
+                        onTheaterClick = { theater ->
+                            viewModel.setTheaterFilter(theater)
+                            viewModel.setTab(AppTab.FEED)
+                        },
+                        onActivityClick = { activity ->
+                            viewModel.setActivityFilter(activity)
+                            viewModel.setTab(AppTab.FEED)
+                        }
+                    )
                 }
 
                 item {
@@ -186,42 +260,110 @@ fun DashboardScreen(viewModel: MainViewModel) {
             UiState.Idle -> {}
         }
     }
+
+    if (showSitrepDialog) {
+        val stats = (statsState as? UiState.Success)?.data
+        SitrepPreviewDialog(
+            posts = posts,
+            stats = stats,
+            onDismiss = { showSitrepDialog = false }
+        )
+    }
 }
 
 @Composable
-fun HeaderCard(onRefresh: () -> Unit) {
+fun ThreatAdvisoryCard(
+    posts: List<PostItem>,
+    stats: StatsResponse?,
+    onRefresh: () -> Unit,
+    onGenerateSitrep: () -> Unit
+) {
+    val kineticCount = posts.count { it.detectActivityType() == ActivityCategory.ATTACKS }
+    val highProfileCount = posts.count { it.isHighProfile == 1 }
+
+    val (level, levelColor, advisoryTitle, note) = when {
+        kineticCount >= 12 || highProfileCount >= 4 -> Quadruple(
+            "LEVEL 4",
+            StatusRed,
+            "CRITICAL OPERATIONAL RISK",
+            "Heightened kinetic friction reported across frontier outposts. Immediate operational sanitization and vigilance advised."
+        )
+        kineticCount >= 5 || highProfileCount >= 1 -> Quadruple(
+            "LEVEL 3",
+            StatusAmber,
+            "ELEVATED THREAT POSTURE",
+            "Increased kinetic probes along KP/Afghan corridor alongside separatist narrative activity in Southern Balochistan."
+        )
+        else -> Quadruple(
+            "LEVEL 2",
+            StatusGreen,
+            "GUARDED OPERATIONAL POSTURE",
+            "Routine operational vigilance. Monitoring peripheral transit corridors and digital disinformation channels."
+        )
+    }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+            .border(1.dp, levelColor.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(9.dp)
-                            .clip(CircleShape)
-                            .background(StatusGreen)
-                    )
-                    Text("ACTIVE SURVEILLANCE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusGreen, letterSpacing = 1.sp)
-                }
-                Text("OSINT Command Center", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
-                Text("National Tactical Monitoring & Threat Dissemination", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            IconButton(
-                onClick = onRefresh,
-                modifier = Modifier.size(42.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.primary)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = levelColor.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            level,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Black,
+                            color = levelColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                    Text(advisoryTitle, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+
+                IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            Text(
+                note,
+                fontSize = 13.sp,
+                lineHeight = 18.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("• $kineticCount Kinetic", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = StatusRed)
+                    Text("• $highProfileCount High-Profile", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = StatusAmber)
+                }
+
+                Button(
+                    onClick = onGenerateSitrep,
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Flash SITREP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
@@ -261,7 +403,11 @@ fun MetricCard(
 }
 
 @Composable
-fun AttackTypeBreakdownCard(stats: StatsResponse, onAttackClick: (String) -> Unit) {
+fun OperationalThreatMatrixCard(
+    stats: StatsResponse,
+    onTheaterClick: (TheaterCategory) -> Unit,
+    onActivityClick: (ActivityCategory) -> Unit
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
@@ -271,23 +417,23 @@ fun AttackTypeBreakdownCard(stats: StatsResponse, onAttackClick: (String) -> Uni
     ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.FlashOn, contentDescription = null, tint = StatusRed, modifier = Modifier.size(22.dp))
-                Text("Incident & Threat Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                Icon(Icons.Default.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                Text("Operational Threat Matrix", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
             }
-            Text("Categorized distribution of tracked security incidents. Tap to inspect filtered wire.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Actionable distribution by strategic theater and tactical doctrine. Tap to inspect filtered wire.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            stats.attackTypes.forEach { attack ->
-                val color = when (attack.attackType) {
-                    "AMBUSH_FIRE" -> StatusRed
-                    "IED_EXPLOSIVE" -> Color(0xFFE11D48)
-                    "CIVIL_UNREST" -> StatusAmber
-                    "SABOTAGE" -> StatusPurple
-                    else -> MaterialTheme.colorScheme.primary
-                }
+            val items = listOf(
+                Triple("FAK (Khawarij / KP & Afghan Frontier)", StatusRed, { onTheaterClick(TheaterCategory.FAK) }),
+                Triple("FAH (Baloch Separatists / Southern Axis)", MaterialTheme.colorScheme.primary, { onTheaterClick(TheaterCategory.FAH) }),
+                Triple("Kinetic Standoffs & Ambush Operations", Color(0xFFB91C1C), { onActivityClick(ActivityCategory.ATTACKS) }),
+                Triple("Media Releases, Statements & Propaganda", Color(0xFF475569), { onActivityClick(ActivityCategory.ACTIVITIES) })
+            )
+
+            items.forEach { (label, color, onClick) ->
                 Surface(
-                    onClick = { onAttackClick(attack.attackType) },
+                    onClick = onClick,
                     shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -299,9 +445,9 @@ fun AttackTypeBreakdownCard(stats: StatsResponse, onAttackClick: (String) -> Uni
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(color))
-                            Text(attack.attackType.replace("_", " "), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text(label, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
                         }
-                        Text("${attack.count} items", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
+                        Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(16.dp), tint = color)
                     }
                 }
             }

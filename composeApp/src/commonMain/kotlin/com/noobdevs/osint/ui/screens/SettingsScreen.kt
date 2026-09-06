@@ -43,18 +43,13 @@ fun SettingsScreen(viewModel: MainViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Settings & Configuration", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("Interface personalization & secure office server connection", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-
-        // 1. APPEARANCE
+        // 1. APPEARANCE (Light Mode default + Dark Mode Switch)
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

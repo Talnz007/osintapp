@@ -45,6 +45,19 @@ actual object PlatformActions {
         UIApplication.sharedApplication.openURL(nsUrl)
     }
 
+    actual fun openPostInXApp(url: String) {
+        if (url.isBlank()) return
+        val tweetId = Regex("""status/(\d+)""").find(url)?.groupValues?.getOrNull(1)
+        if (tweetId != null) {
+            val twitterUrl = NSURL.URLWithString("twitter://status?status_id=$tweetId")
+            if (twitterUrl != null && UIApplication.sharedApplication.canOpenURL(twitterUrl)) {
+                UIApplication.sharedApplication.openURL(twitterUrl)
+                return
+            }
+        }
+        openUrl(url)
+    }
+
     actual fun copyToClipboard(text: String, label: String) {
         UIPasteboard.generalPasteboard.string = text
     }

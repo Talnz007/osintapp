@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,13 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
-import com.noobdevs.osint.data.models.PipelineFilter
+import com.noobdevs.osint.data.models.ActivityCategory
 import com.noobdevs.osint.data.models.PostItem
+import com.noobdevs.osint.data.models.TheaterCategory
 import com.noobdevs.osint.data.models.TimeRange
 import com.noobdevs.osint.platform.PlatformActions
 import com.noobdevs.osint.ui.MainViewModel
@@ -37,164 +37,268 @@ import com.noobdevs.osint.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(viewModel: MainViewModel) {
-    val posts by viewModel.posts.collectAsState()
+        val posts by viewModel.posts.collectAsState()
     val bookmarks by viewModel.bookmarks.collectAsState()
     val showOnlyBookmarks by viewModel.showOnlyBookmarks.collectAsState()
     val isLoading by viewModel.isPostsLoading.collectAsState()
     val error by viewModel.postsError.collectAsState()
-    val selectedProvince by viewModel.selectedProvince.collectAsState()
-    val selectedAttackType by viewModel.selectedAttackType.collectAsState()
+    val selectedTheater by viewModel.selectedTheater.collectAsState()
+    val selectedActivity by viewModel.selectedActivity.collectAsState()
     val selectedTimeRange by viewModel.selectedTimeRange.collectAsState()
-    val selectedPipeline by viewModel.selectedPipeline.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     var activeSearchText by remember { mutableStateOf(searchQuery) }
     var postForVideoDownloader by remember { mutableStateOf<PostItem?>(null) }
-    var showFilterSheet by remember { mutableStateOf(false) }
 
-    val provinces = listOf("All", "Balochistan", "KPK", "AJK / Kashmir", "Sindh", "Punjab", "International")
-    val hasActiveFilters = selectedTimeRange != TimeRange.LIVE || selectedPipeline != PipelineFilter.ALL || selectedAttackType != "ALL"
+    var theaterDropdownExpanded by remember { mutableStateOf(false) }
+    var activityDropdownExpanded by remember { mutableStateOf(false) }
+    var timeDropdownExpanded by remember { mutableStateOf(false) }
 
     val basePosts = if (showOnlyBookmarks) bookmarks else posts
-    val filteredPosts = remember(basePosts, selectedProvince) {
-        if (selectedProvince == "All") basePosts
-        else basePosts.filter { it.detectProvince().equals(selectedProvince, ignoreCase = true) }
+    val filteredPosts = remember(basePosts, selectedTheater, selectedActivity) {
+        basePosts.filter { post ->
+            val matchTheater = selectedTheater == TheaterCategory.ALL || post.detectTheater() == selectedTheater
+            val matchActivity = selectedActivity == ActivityCategory.ALL || post.detectActivityType() == selectedActivity
+            matchTheater && matchActivity
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // EXECUTIVE CLEAN HEADER
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        // MINIMALIST CORPORATE EXECUTIVE HEADER
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column {
-                    Text(
-                        "Intelligence Wire",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(StatusGreen))
+                // Top Status & Actions Bar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(StatusGreen))
                         Text(
-                            "Live Operational Feed • ${posts.size} Intercepts",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
+                            "${filteredPosts.size} Strategic Intercepts",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                }
 
-                if (showOnlyBookmarks && bookmarks.isNotEmpty()) {
-                    FilledTonalButton(
-                        onClick = { viewModel.exportEvidenceDossier() },
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Export Dossier", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        // Evidence Bag Toggle
+                        FilterChip(
+                            selected = showOnlyBookmarks,
+                            onClick = { viewModel.toggleShowOnlyBookmarks() },
+                            leadingIcon = {
+                                Icon(
+                                    if (showOnlyBookmarks) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = null,
+                                    tint = if (showOnlyBookmarks) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            label = { Text("Evidence (${bookmarks.size})", fontSize = 11.5.sp, fontWeight = FontWeight.Bold) },
+                            modifier = Modifier.height(34.dp)
+                        )
+
+                        IconButton(onClick = { viewModel.loadPosts(1, append = false) }, modifier = Modifier.size(34.dp)) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh", modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
-            }
 
-            // Search Bar + Filter Dialog Trigger Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+                // Search Bar
                 OutlinedTextField(
                     value = activeSearchText,
                     onValueChange = {
                         activeSearchText = it
                         viewModel.setSearchQuery(it)
                     },
-                    placeholder = { Text("Search wire, accounts, incidents...", fontSize = 13.sp) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    placeholder = { Text("Search by keywords, accounts, districts...", fontSize = 13.sp) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
                     trailingIcon = {
                         if (activeSearchText.isNotEmpty()) {
                             IconButton(onClick = {
                                 activeSearchText = ""
                                 viewModel.setSearchQuery("")
                             }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                             }
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f)
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
                 )
 
-                FilledTonalButton(
-                    onClick = { showFilterSheet = true },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
+                // CORPORATE DROPDOWN SELECTION ROW
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    BadgedBox(badge = {
-                        if (hasActiveFilters) {
-                            Badge { Text("!") }
+                    // Theater Dropdown
+                    ExposedDropdownMenuBox(
+                        expanded = theaterDropdownExpanded,
+                        onExpandedChange = { theaterDropdownExpanded = !theaterDropdownExpanded },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                                .menuAnchor()
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    selectedTheater.shortCode,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
                         }
-                    }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filters", modifier = Modifier.size(20.dp))
+
+                        ExposedDropdownMenu(
+                            expanded = theaterDropdownExpanded,
+                            onDismissRequest = { theaterDropdownExpanded = false }
+                        ) {
+                            TheaterCategory.entries.forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat.label, fontSize = 12.5.sp) },
+                                    onClick = {
+                                        viewModel.setTheaterFilter(cat)
+                                        theaterDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Filters", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
-            }
 
-            // Zone & Evidence Bag Filter Bar
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                item {
-                    FilterChip(
-                        selected = showOnlyBookmarks,
-                        onClick = { viewModel.toggleShowOnlyBookmarks() },
-                        leadingIcon = {
-                            Icon(
-                                if (showOnlyBookmarks) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = null,
-                                tint = if (showOnlyBookmarks) StatusAmber else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        label = { Text("Evidence Bag (${bookmarks.size})", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = StatusAmber.copy(alpha = 0.2f),
-                            selectedLabelColor = StatusAmber
-                        ),
-                        modifier = Modifier.height(34.dp)
-                    )
-                }
+                    // Activity Type Dropdown
+                    ExposedDropdownMenuBox(
+                        expanded = activityDropdownExpanded,
+                        onExpandedChange = { activityDropdownExpanded = !activityDropdownExpanded },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                                .menuAnchor()
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    when (selectedActivity) {
+                                        ActivityCategory.ALL -> "All Types"
+                                        ActivityCategory.ATTACKS -> "Attacks"
+                                        ActivityCategory.ACTIVITIES -> "Media"
+                                    },
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
 
-                items(provinces) { province ->
-                    FilterChip(
-                        selected = !showOnlyBookmarks && selectedProvince == province,
-                        onClick = {
-                            if (showOnlyBookmarks) viewModel.toggleShowOnlyBookmarks()
-                            viewModel.setProvinceFilter(province)
-                        },
-                        label = { Text(if (province == "All") "All Regions" else province, fontSize = 12.sp, fontWeight = FontWeight.Medium) },
-                        modifier = Modifier.height(34.dp)
-                    )
+                        ExposedDropdownMenu(
+                            expanded = activityDropdownExpanded,
+                            onDismissRequest = { activityDropdownExpanded = false }
+                        ) {
+                            ActivityCategory.entries.forEach { act ->
+                                DropdownMenuItem(
+                                    text = { Text(act.label, fontSize = 12.5.sp) },
+                                    onClick = {
+                                        viewModel.setActivityFilter(act)
+                                        activityDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Time Window Dropdown
+                    ExposedDropdownMenuBox(
+                        expanded = timeDropdownExpanded,
+                        onExpandedChange = { timeDropdownExpanded = !timeDropdownExpanded },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                                .menuAnchor()
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    selectedTimeRange.label.replace("Last ", ""),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+
+                        ExposedDropdownMenu(
+                            expanded = timeDropdownExpanded,
+                            onDismissRequest = { timeDropdownExpanded = false }
+                        ) {
+                            TimeRange.entries.forEach { tr ->
+                                DropdownMenuItem(
+                                    text = { Text(tr.label, fontSize = 12.5.sp) },
+                                    onClick = {
+                                        viewModel.setTimeRange(tr)
+                                        timeDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-
-        // Posts Stream
+        // POSTS STREAM
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -210,7 +314,7 @@ fun FeedScreen(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Failed to retrieve intelligence wire", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                            Text("Failed to retrieve wire via live server", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                             Text(error ?: "", fontSize = 13.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(onClick = { viewModel.loadPosts(1, append = false) }) {
@@ -224,9 +328,10 @@ fun FeedScreen(viewModel: MainViewModel) {
             if (filteredPosts.isEmpty() && !isLoading && error == null) {
                 item {
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth().padding(top = 32.dp)
+                        modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                     ) {
                         Column(
                             modifier = Modifier.padding(32.dp).fillMaxWidth(),
@@ -236,17 +341,17 @@ fun FeedScreen(viewModel: MainViewModel) {
                             Icon(
                                 if (showOnlyBookmarks) Icons.Default.BookmarkBorder else Icons.Default.SearchOff,
                                 contentDescription = null,
-                                modifier = Modifier.size(48.dp),
+                                modifier = Modifier.size(44.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                if (showOnlyBookmarks) "Evidence Bag is Empty" else "No matching intelligence records",
+                                if (showOnlyBookmarks) "Evidence Bag is Empty" else "No matching intercepts",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
                             Text(
-                                if (showOnlyBookmarks) "Save important posts using the bookmark icon to review them later in your Evidence Bag."
-                                else "Try resetting filters or searching with different keywords.",
+                                if (showOnlyBookmarks) "Tap the bookmark icon on any card to save high-priority intelligence here."
+                                else "Try selecting 'All Theaters' or clearing the search query.",
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -257,137 +362,26 @@ fun FeedScreen(viewModel: MainViewModel) {
             }
 
             items(filteredPosts, key = { it.id }) { post ->
-                EnhancedPostCard(
+                MinimalistPostCard(
                     post = post,
                     viewModel = viewModel,
                     onOpenVideoDownloader = { postForVideoDownloader = post },
-                    onOpenBrowser = { url -> PlatformActions.openUrl(url) }
+                    onOpenBrowser = { url ->
+                        PlatformActions.openUrl(url)
+                    }
                 )
             }
 
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isLoading) {
+            if (isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(modifier = Modifier.size(28.dp))
-                    } else if (filteredPosts.isNotEmpty()) {
-                        OutlinedButton(
-                            onClick = { viewModel.loadNextPage() },
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(Icons.Default.ExpandMore, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Load More Intelligence (${filteredPosts.size} showing)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        }
                     }
                 }
             }
         }
     }
 
-    // FILTER DIALOG
-    if (showFilterSheet) {
-        Dialog(onDismissRequest = { showFilterSheet = false }) {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Filter Intelligence Stream", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { showFilterSheet = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
-                        }
-                    }
-
-                    // 1. Time Window
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("TIME WINDOW", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            TimeRange.entries.forEach { tr ->
-                                FilterChip(
-                                    selected = selectedTimeRange == tr,
-                                    onClick = { viewModel.setTimeRange(tr) },
-                                    label = { Text(tr.label, fontSize = 11.sp) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-
-                    // 2. Feed Source Pipeline
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("INTEL STREAM PIPELINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            PipelineFilter.entries.forEach { pipe ->
-                                FilterChip(
-                                    selected = selectedPipeline == pipe,
-                                    onClick = { viewModel.setPipelineFilter(pipe) },
-                                    label = { Text(pipe.label, fontSize = 11.sp) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-
-                    // 3. Incident Type
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("INCIDENT & ATTACK CATEGORY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusRed)
-                        val attackTypes = listOf("ALL", "AMBUSH_FIRE", "IED_EXPLOSIVE", "CIVIL_UNREST", "SABOTAGE")
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(attackTypes) { attack ->
-                                FilterChip(
-                                    selected = selectedAttackType == attack,
-                                    onClick = { viewModel.setAttackTypeFilter(attack) },
-                                    label = { Text(attack.replace("_", " "), fontSize = 11.sp) }
-                                )
-                            }
-                        }
-                    }
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.setTimeRange(TimeRange.LIVE)
-                                viewModel.setPipelineFilter(PipelineFilter.ALL)
-                                viewModel.setAttackTypeFilter("ALL")
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Reset")
-                        }
-
-                        Button(
-                            onClick = { showFilterSheet = false },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Apply")
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // INBUILT VIDEO PLAYER & MEDIA MODAL
     postForVideoDownloader?.let { post ->
         InbuiltVideoPlayerModal(
             post = post,
@@ -398,202 +392,149 @@ fun FeedScreen(viewModel: MainViewModel) {
 }
 
 @Composable
-fun EnhancedPostCard(
+fun MinimalistPostCard(
     post: PostItem,
     viewModel: MainViewModel,
     onOpenVideoDownloader: () -> Unit,
     onOpenBrowser: (String) -> Unit
 ) {
-    val province = post.detectProvince()
+        val theater = post.detectTheater()
+    val activity = post.detectActivityType()
+    val district = post.detectLocationName()
     val mediaUrl = viewModel.apiClient.getMediaUrl(post.sentimentImagePath)
 
-    val provinceColor = when (province) {
-        "Balochistan" -> StatusAmber
-        "KPK" -> StatusPurple
-        "AJK / Kashmir" -> MaterialTheme.colorScheme.primary
-        "Sindh" -> StatusGreen
-        "Punjab" -> Color(0xFF0284C7)
-        "International" -> Color(0xFF2563EB)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    val badgeColor = when (theater) {
+        TheaterCategory.FAK -> StatusRed
+        TheaterCategory.FAH -> MaterialTheme.colorScheme.primary
+        TheaterCategory.INTL -> Color(0xFF475569)
+        else -> MaterialTheme.colorScheme.outline
     }
-
-    val isAttack = post.attackType == "AMBUSH_FIRE" || post.attackType == "IED_EXPLOSIVE" || post.attackType == "SABOTAGE"
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(
-                1.dp,
-                if (isAttack) StatusRed.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
-                RoundedCornerShape(16.dp)
-            )
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Header
+            // Header Row: Faction Tag, District / Province, Date, Browser Link
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        color = badgeColor.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            post.account?.take(1)?.uppercase() ?: "@",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = 14.sp
+                            theater.shortCode,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = badgeColor,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(post.account ?: "Unknown Source", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text(
-                            "${post.sourcePipeline ?: "Field Stream"} • ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
 
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = provinceColor.copy(alpha = 0.12f)
-                ) {
-                    Text(
-                        province,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = provinceColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
-                }
-            }
-
-            // High-Priority Indicators
-            if (isAttack || post.isShaheedIncident == 1 || post.isHighProfile == 1) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!post.attackType.isNullOrBlank() && post.attackType != "GENERAL") {
+                    if (activity == ActivityCategory.ATTACKS) {
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = if (isAttack) StatusRed.copy(alpha = 0.15f) else MaterialTheme.colorScheme.secondaryContainer
+                            color = Color(0xFFB91C1C).copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(6.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(if (isAttack) StatusRed else MaterialTheme.colorScheme.primary))
-                                Text(
-                                    post.attackType.replace("_", " "),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isAttack) StatusRed else MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
+                            Text(
+                                "ATTACK",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFB91C1C),
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
                         }
                     }
-                    if (post.isShaheedIncident == 1) {
-                        Surface(shape = RoundedCornerShape(6.dp), color = StatusRed.copy(alpha = 0.15f)) {
-                            Text("CASUALTY REPORT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusRed, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                        }
-                    }
-                    if (post.isHighProfile == 1) {
-                        Surface(shape = RoundedCornerShape(6.dp), color = StatusAmber.copy(alpha = 0.15f)) {
-                            Text("HIGH PROFILE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusAmber, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+
+                    Text(district, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        post.scrapedDate?.take(10) ?: "",
+                        fontSize = 11.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (!post.url.isNullOrBlank()) {
+                        IconButton(onClick = { onOpenBrowser(post.url) }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open Source", modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
             }
 
-            // Content
+            // Body Content (Clean High-Contrast Typography for Senior Executives)
             Text(
-                post.content.orEmpty(),
-                fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = 22.sp,
-                fontWeight = FontWeight.Normal
+                post.content ?: post.whatsappMessageSent.orEmpty(),
+                fontSize = 14.5.sp,
+                lineHeight = 21.sp,
+                fontWeight = FontWeight.Normal,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Image Preview
+            // Optional Image Attachment Preview
             if (mediaUrl != null) {
-                Box(
+                AsyncImage(
+                    model = mediaUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(180.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    AsyncImage(
-                        model = mediaUrl,
-                        contentDescription = "Intercepted Media",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-
-            // Hashtags
-            if (post.hashtags.isNotEmpty()) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(post.hashtags) { tag ->
-                        Text(tag, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
-                    }
-                }
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                )
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-            // Actions
+            // Action Row: WhatsApp, Watch, Simple Download, Bookmark, Share
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // Direct WhatsApp Dispatch
                     Button(
                         onClick = { viewModel.sendPostToWhatsApp(post) },
                         colors = ButtonDefaults.buttonColors(containerColor = WhatsAppGreen),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(5.dp))
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "WhatsApp", tint = Color.White, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("WhatsApp", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
 
+                    // Inbuilt Video Player Modal
                     if (!post.url.isNullOrBlank()) {
                         OutlinedButton(
                             onClick = onOpenVideoDownloader,
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Watch", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    if (mediaUrl != null) {
-                        FilledTonalButton(
-                            onClick = { viewModel.downloadImage(post) },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Photo", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Simple Download Icon Button (Clean and direct)
+                    IconButton(onClick = { viewModel.downloadImage(post) }, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Default.Download, contentDescription = "Download", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
+
+                    // Save / Bookmark Evidence
                     val isSaved = viewModel.isBookmarked(post.id)
                     IconButton(
                         onClick = { viewModel.toggleBookmark(post) },
@@ -607,21 +548,12 @@ fun EnhancedPostCard(
                         )
                     }
 
+                    // Share SITREP
                     IconButton(
                         onClick = { viewModel.sharePost(post) },
                         modifier = Modifier.size(36.dp)
                     ) {
-                        Icon(
-                            Icons.Default.Share,
-                            contentDescription = "Share SITREP",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    if (!post.url.isNullOrBlank()) {
-                        IconButton(onClick = { onOpenBrowser(post.url) }, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open Source Link", modifier = Modifier.size(18.dp))
-                        }
+                        Icon(Icons.Default.Share, contentDescription = "Share SITREP", modifier = Modifier.size(18.dp))
                     }
                 }
             }

@@ -10,6 +10,7 @@
 		A100000129B7F10000000001 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000229B7F10000000001 /* iOSApp.swift */; };
 		A100000329B7F10000000001 /* ComposeApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A100000429B7F10000000001 /* ComposeApp.framework */; };
 		A100001829B7F10000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A100001929B7F10000000001 /* Assets.xcassets */; };
+		A100002029B7F10000000001 /* leaflet in Resources */ = {isa = PBXBuildFile; fileRef = A100002129B7F10000000001 /* leaflet */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,6 +19,7 @@
 		A100000529B7F10000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A100000629B7F10000000001 /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A100001929B7F10000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A100002129B7F10000000001 /* leaflet */ = {isa = PBXFileReference; lastKnownFileType = folder; path = leaflet; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,6 +49,7 @@
 				A100000229B7F10000000001 /* iOSApp.swift */,
 				A100000529B7F10000000001 /* Info.plist */,
 				A100001929B7F10000000001 /* Assets.xcassets */,
+				A100002129B7F10000000001 /* leaflet */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -173,6 +176,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A100001829B7F10000000001 /* Assets.xcassets in Resources */,
+				A100002029B7F10000000001 /* leaflet in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

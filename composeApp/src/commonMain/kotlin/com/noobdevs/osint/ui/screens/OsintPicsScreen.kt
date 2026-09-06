@@ -56,54 +56,32 @@ fun OsintPicsScreen(viewModel: MainViewModel) {
     val periodCoveredText = "Pd Covering – Live 24-Hour Surveillance Window"
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        // Flush Executive Subtab Bar
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            TabRow(
+                selectedTabIndex = selectedSubTab,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                divider = {}
             ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(StatusGreen))
-                        Text("TACTICAL OSINT PICTURE", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
-                    }
-                    Text("Daily Intelligence Sitrep", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                }
-
-                FilledTonalButton(
-                    onClick = { showLexiconDialog = true },
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Lexicon / Terms", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            PrimaryTabRow(selectedTabIndex = selectedSubTab) {
                 Tab(
                     selected = selectedSubTab == 0,
                     onClick = { selectedSubTab = 0 },
-                    text = { Text("Daily OSINT Picture", fontWeight = FontWeight.Bold) },
-                    icon = { Icon(Icons.Default.DashboardCustomize, contentDescription = null) }
+                    text = { Text("Daily OSINT Picture", fontWeight = FontWeight.Bold, fontSize = 12.5.sp) },
+                    icon = { Icon(Icons.Default.DashboardCustomize, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 )
                 Tab(
                     selected = selectedSubTab == 1,
                     onClick = { selectedSubTab = 1 },
-                    text = { Text("Visual Imagery (${mediaPosts.size})", fontWeight = FontWeight.Bold) },
-                    icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) }
+                    text = { Text("Visual Imagery (${mediaPosts.size})", fontWeight = FontWeight.Bold, fontSize = 12.5.sp) },
+                    icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 )
             }
         }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
         if (selectedSubTab == 0) {
             LazyColumn(

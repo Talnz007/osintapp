@@ -40,42 +40,32 @@ fun DorScreen(viewModel: MainViewModel) {
     var selectedSubTab by remember { mutableStateOf(0) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        // Flush Executive Subtab Bar
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Text("Daily Operational Reports (DOR)", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            }
-            Text(
-                "Executive briefing decks & automated operational intelligence bulletins",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            PrimaryTabRow(selectedTabIndex = selectedSubTab) {
+            TabRow(
+                selectedTabIndex = selectedSubTab,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                divider = {}
+            ) {
                 Tab(
                     selected = selectedSubTab == 0,
                     onClick = { selectedSubTab = 0 },
-                    text = { Text("Briefing Decks (.pptx)", fontWeight = FontWeight.Bold) },
-                    icon = { Icon(Icons.Default.Slideshow, contentDescription = null) }
+                    text = { Text("PowerPoint Briefs (.pptx)", fontWeight = FontWeight.Bold, fontSize = 12.5.sp) },
+                    icon = { Icon(Icons.Default.Slideshow, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 )
                 Tab(
                     selected = selectedSubTab == 1,
                     onClick = { selectedSubTab = 1 },
-                    text = { Text("DOR Bulletins (${dorBulletins.size})", fontWeight = FontWeight.Bold) },
-                    icon = { Icon(Icons.Default.MarkChatRead, contentDescription = null) }
+                    text = { Text("Dispatches (${dorBulletins.size})", fontWeight = FontWeight.Bold, fontSize = 12.5.sp) },
+                    icon = { Icon(Icons.Default.MarkChatRead, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 )
             }
         }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
         if (selectedSubTab == 0) {
             when (val state = decksState) {
@@ -168,16 +158,20 @@ fun DeckCard(deck: DeckItem, onDownload: () -> Unit) {
         shape = RoundedCornerShape(14.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -187,9 +181,18 @@ fun DeckCard(deck: DeckItem, onDownload: () -> Unit) {
                 ) {
                     Icon(Icons.Default.Slideshow, contentDescription = null, tint = StatusPurple)
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(deck.filename, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        deck.filename,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(deck.sizeFormatted, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                         Text("•", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(deck.modifiedAt, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -197,14 +200,19 @@ fun DeckCard(deck: DeckItem, onDownload: () -> Unit) {
                 }
             }
 
-            Button(
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Clean Dedicated Download Action
+            FilledIconButton(
                 onClick = onDownload,
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ),
+                modifier = Modifier.size(40.dp)
             ) {
-                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Download", fontSize = 12.sp)
+                Icon(Icons.Default.Download, contentDescription = "Download", modifier = Modifier.size(20.dp))
             }
         }
     }
