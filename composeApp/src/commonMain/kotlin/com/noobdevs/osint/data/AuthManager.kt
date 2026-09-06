@@ -32,7 +32,15 @@ class AuthManager(private val settings: Settings = Settings()) {
         set(value) { settings.putLong(KEY_NOTIFICATION_INTERVAL, value) }
 
     var baseUrl: String
-        get() = settings.getString(KEY_BASE_URL, DEFAULT_BASE_URL).trimEnd('/')
+        get() {
+            val stored = settings.getString(KEY_BASE_URL, DEFAULT_BASE_URL).trimEnd('/')
+            return if (stored.contains("subversive-puzzles-leone-camps")) {
+                settings.putString(KEY_BASE_URL, DEFAULT_BASE_URL)
+                DEFAULT_BASE_URL
+            } else {
+                stored
+            }
+        }
         set(value) { settings.putString(KEY_BASE_URL, value.trimEnd('/')) }
 
     var username: String
