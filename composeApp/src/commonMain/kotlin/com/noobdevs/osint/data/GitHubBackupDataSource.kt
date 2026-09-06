@@ -33,43 +33,51 @@ class GitHubBackupDataSource(
             return Result.success(cachedPosts)
         }
 
-        return try {
-            val response = client.get(GitHubMirrorConfig.RAW_URL) {
-                header("Authorization", "token ${GitHubMirrorConfig.GITHUB_BACKUP_TOKEN}")
-                header("User-Agent", "OSINT-Mobile-App")
-                lastETag?.let { header("If-None-Match", it) }
-            }
+        // Try GitHub API endpoint first (via api.github.com), fallback to raw.githubusercontent.com
+        val endpoints = listOf(
+            GitHubMirrorConfig.API_URL to "application/vnd.github.v3.raw",
+            GitHubMirrorConfig.RAW_URL to "application/json"
+        )
 
-            if (response.status == HttpStatusCode.NotModified && cachedPosts.isNotEmpty()) {
-                lastFetchTimestamp = now
-                return Result.success(cachedPosts)
-            }
+        var lastError: Exception? = null
 
-            if (response.status.isSuccess()) {
-                val newEtag = response.headers["ETag"]
-                if (!newEtag.isNullOrBlank()) {
-                    lastETag = newEtag
+        for ((url, acceptHeader) in endpoints) {
+            try {
+                val response = client.get(url) {
+                    header("Authorization", "token ${GitHubMirrorConfig.GITHUB_BACKUP_TOKEN}")
+                    header("Accept", acceptHeader)
+                    header("User-Agent", "OSINT-Mobile-App")
+                    lastETag?.let { header("If-None-Match", it) }
                 }
 
-                val body = response.bodyAsText()
-                val parsed = parseRawReports(body)
-                cachedPosts = parsed
-                lastFetchTimestamp = now
-                Result.success(parsed)
-            } else {
-                if (cachedPosts.isNotEmpty()) {
-                    Result.success(cachedPosts)
+                if (response.status == HttpStatusCode.NotModified && cachedPosts.isNotEmpty()) {
+                    lastFetchTimestamp = now
+                    return Result.success(cachedPosts)
+                }
+
+                if (response.status.isSuccess()) {
+                    val newEtag = response.headers["ETag"]
+                    if (!newEtag.isNullOrBlank()) {
+                        lastETag = newEtag
+                    }
+
+                    val body = response.bodyAsText()
+                    val parsed = parseRawReports(body)
+                    cachedPosts = parsed
+                    lastFetchTimestamp = now
+                    return Result.success(parsed)
                 } else {
-                    Result.failure(Exception("GitHub Backup Mirror returned HTTP ${response.status.value}"))
+                    lastError = Exception("HTTP ${response.status.value} from $url")
                 }
-            }
-        } catch (e: Exception) {
-            if (cachedPosts.isNotEmpty()) {
-                Result.success(cachedPosts)
-            } else {
-                Result.failure(e)
+            } catch (e: Exception) {
+                lastError = e
             }
         }
+
+        if (cachedPosts.isNotEmpty()) {
+            return Result.success(cachedPosts)
+        }
+        return Result.failure(lastError ?: Exception("Unable to connect to GitHub Backup Mirror"))
     }
 
     private fun parseRawReports(jsonString: String): List<PostItem> {

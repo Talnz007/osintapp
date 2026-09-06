@@ -31,5 +31,6 @@ object GitHubMirrorConfig {
         }
     }
 
+    const val API_URL = "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$DATA_FILE_PATH"
     const val RAW_URL = "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/$BRANCH/$DATA_FILE_PATH"
 }
