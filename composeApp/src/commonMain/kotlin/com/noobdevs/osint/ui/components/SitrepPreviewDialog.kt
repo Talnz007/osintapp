@@ -240,7 +240,7 @@ fun SitrepMarkdownRenderer(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 // Horizontal divider lines
-                trimmed.startsWith("━") || trimmed == "---" || trimmed.startsWith("----") -> {
+                trimmed.startsWith("---") || trimmed.startsWith("===") || trimmed.startsWith("___") -> {
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
                         modifier = Modifier.padding(vertical = 4.dp)

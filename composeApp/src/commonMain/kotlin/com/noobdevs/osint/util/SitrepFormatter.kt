@@ -87,7 +87,7 @@ object SitrepFormatter {
             append("• *Reporting Window*: Past 24 Hours\n")
             append("• *Advisory*: $severityLevel\n\n")
 
-            append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+            append("----------------------------\n")
             append("1. *STRATEGIC SECTOR METRICS*\n")
             append("• *Total Intercepted Wire*: $total dispatches\n")
             append("• *Northern Theater (FAK / KP & Afghan)*: ${fakPosts.size} (${fakPosts.count { it.detectActivityType() == com.noobdevs.osint.data.models.ActivityCategory.ATTACKS }} Kinetic, ${fakPosts.count { it.detectActivityType() == com.noobdevs.osint.data.models.ActivityCategory.ACTIVITIES }} Media)\n")
@@ -95,7 +95,7 @@ object SitrepFormatter {
             append("• *Total Kinetic Incidents*: ${kinetic.size}\n")
             append("• *High-Profile Alerts*: ${highProfile.size}\n\n")
 
-            append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+            append("----------------------------\n")
             append("2. *KEY INTERCEPTED INCIDENTS*\n")
             val topEvents = (kinetic + highProfile).distinctBy { it.id }.take(4)
             if (topEvents.isEmpty()) {
@@ -110,7 +110,7 @@ object SitrepFormatter {
             }
             append("\n")
 
-            append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+            append("----------------------------\n")
             append("3. *ANALYST OPERATIONAL ASSESSMENT*\n")
             if (fakPosts.size > fahPosts.size) {
                 append("• Hostile activity concentrated in Northern frontier (FAK). Heightened vigil recommended along border checkposts & transit arteries.\n")

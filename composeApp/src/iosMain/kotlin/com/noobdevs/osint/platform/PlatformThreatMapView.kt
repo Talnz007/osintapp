@@ -5,9 +5,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
 import com.noobdevs.osint.data.models.ThreatMapMarker
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import platform.CoreGraphics.CGRectMake
 import platform.Foundation.*
 import platform.WebKit.*
 import platform.darwin.NSObject
@@ -21,9 +23,9 @@ actual fun PlatformThreatMapView(
     centerTrigger: Int
 ) {
     var webViewRef by remember { mutableStateOf<WKWebView?>(null) }
-    var navDelegate by remember { mutableStateOf<Any?>(null) }
 
     fun sendMarkers(view: WKWebView?, list: List<ThreatMapMarker>) {
+        if (view == null) return
         val json = buildJsonArray {
             list.forEach { m ->
                 add(buildJsonObject {
@@ -38,10 +40,17 @@ actual fun PlatformThreatMapView(
                 })
             }
         }.toString()
-        view?.evaluateJavaScript("if (window.renderMarkers) { window.renderMarkers($json); }", null)
+        view.evaluateJavaScript("if (window.renderMarkers) { window.renderMarkers($json); }", null)
     }
 
     LaunchedEffect(markers) {
+        webViewRef?.let { sendMarkers(it, markers) }
+    }
+
+    LaunchedEffect(Unit) {
+        delay(600)
+        webViewRef?.let { sendMarkers(it, markers) }
+        delay(1500)
         webViewRef?.let { sendMarkers(it, markers) }
     }
 
@@ -61,23 +70,37 @@ actual fun PlatformThreatMapView(
                         userContentController: WKUserContentController,
                         didReceiveScriptMessage: WKScriptMessage
                     ) {
-                        val body = didReceiveScriptMessage.body
-                        val id = (body as? NSNumber)?.longValue ?: return
-                        onMarkerClicked(id)
+                        when (didReceiveScriptMessage.name) {
+                            "onMarkerClicked" -> {
+                                val body = didReceiveScriptMessage.body
+                                val id = (body as? NSNumber)?.longValue ?: return
+                                onMarkerClicked(id)
+                            }
+                            "mapReady" -> {
+                                sendMarkers(webViewRef, markers)
+                            }
+                        }
                     }
                 },
                 "onMarkerClicked"
             )
+            contentController.addScriptMessageHandler(
+                object : NSObject(), WKScriptMessageHandlerProtocol {
+                    override fun userContentController(
+                        userContentController: WKUserContentController,
+                        didReceiveScriptMessage: WKScriptMessage
+                    ) {
+                        sendMarkers(webViewRef, markers)
+                    }
+                },
+                "mapReady"
+            )
             config.userContentController = contentController
 
-            val webView = WKWebView(frame = platform.CoreGraphics.CGRectZero, configuration = config)
-            val delegate = object : NSObject(), WKNavigationDelegateProtocol {
-                override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
-                    sendMarkers(webView, markers)
-                }
-            }
-            navDelegate = delegate
-            webView.navigationDelegate = delegate
+            val webView = WKWebView(
+                frame = CGRectMake(0.0, 0.0, 0.0, 0.0),
+                configuration = config
+            )
             val bundle = NSBundle.mainBundle
             val htmlPath = bundle.pathForResource("map", ofType = "html", inDirectory = "leaflet")
                 ?: bundle.pathForResource("map", ofType = "html")

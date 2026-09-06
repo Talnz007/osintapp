@@ -35,7 +35,7 @@ jobs:
 
       - name: Build KMP Apple Framework for iOS
         run: |
-          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon --stacktrace
           mkdir -p composeApp/build/xcode-frameworks/Release/iphoneos
           cp -R composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework composeApp/build/xcode-frameworks/Release/iphoneos/
 
