@@ -69,7 +69,7 @@ actual fun PlatformThreatMapView(
             )
             config.userContentController = contentController
 
-            val webView = WKWebView(frame = platform.CoreGraphics.CGRectZero.readValue(), configuration = config)
+            val webView = WKWebView(frame = platform.CoreGraphics.CGRectZero, configuration = config)
             val bundle = NSBundle.mainBundle
             val htmlPath = bundle.pathForResource("map", ofType = "html", inDirectory = "leaflet")
                 ?: bundle.pathForResource("map", ofType = "html")
