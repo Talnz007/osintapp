@@ -68,6 +68,8 @@ class MainViewModel(
     private val _statsState = MutableStateFlow<UiState<StatsResponse>>(UiState.Loading)
     val statsState: StateFlow<UiState<StatsResponse>> = _statsState.asStateFlow()
 
+    val isBackupMirrorActive: StateFlow<Boolean> = apiClient.isBackupMirrorActive
+
     private val _posts = MutableStateFlow<List<PostItem>>(emptyList())
     val posts: StateFlow<List<PostItem>> = _posts.asStateFlow()
 

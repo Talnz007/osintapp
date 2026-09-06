@@ -19,6 +19,9 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -37,6 +40,9 @@ class KtorOsintApiClient(
         }
     }
 ) {
+    val gitHubBackup: GitHubBackupDataSource = GitHubBackupDataSource(client)
+    private val _isBackupMirrorActive = MutableStateFlow(false)
+    val isBackupMirrorActive: StateFlow<Boolean> = _isBackupMirrorActive.asStateFlow()
 
     @OptIn(ExperimentalEncodingApi::class)
     suspend fun testLogin(url: String, user: String, pass: String): Result<String> {
@@ -63,15 +69,22 @@ class KtorOsintApiClient(
         }
     }
 
+    suspend fun testGitHubMirror(): Result<String> {
+        return gitHubBackup.fetchReports(forceRefresh = true).map {
+            "Connected to GitHub Backup Mirror (${it.size} reports synced)"
+        }
+    }
+
     suspend fun getStats(): Result<StatsResponse> {
-        return try {
+        val primaryResult = try {
             val response = client.get("${authManager.baseUrl}/api/stats") {
                 header("Authorization", authManager.getBasicAuthHeader())
                 header("Accept", "application/json")
             }
 
             if (response.status.isSuccess()) {
-                Result.success(response.body())
+                _isBackupMirrorActive.value = false
+                Result.success(response.body<StatsResponse>())
             } else {
                 val body = response.bodyAsText()
                 Result.failure(Exception("HTTP ${response.status.value}: $body"))
@@ -79,6 +92,14 @@ class KtorOsintApiClient(
         } catch (e: Exception) {
             Result.failure(e)
         }
+
+        if (primaryResult.isSuccess) {
+            return primaryResult
+        }
+
+        // Automatic emergency failover to GitHub Backup Mirror
+        _isBackupMirrorActive.value = true
+        return gitHubBackup.getStats()
     }
 
     suspend fun getPosts(
@@ -90,7 +111,7 @@ class KtorOsintApiClient(
         pipeline: String? = null,
         hours: Int? = null
     ): Result<PostsResponse> {
-        return try {
+        val primaryResult = try {
             val response = client.get("${authManager.baseUrl}/api/posts") {
                 header("Authorization", authManager.getBasicAuthHeader())
                 header("Accept", "application/json")
@@ -114,7 +135,8 @@ class KtorOsintApiClient(
             }
 
             if (response.status.isSuccess()) {
-                Result.success(response.body())
+                _isBackupMirrorActive.value = false
+                Result.success(response.body<PostsResponse>())
             } else {
                 val body = response.bodyAsText()
                 Result.failure(Exception("HTTP ${response.status.value}: $body"))
@@ -122,6 +144,14 @@ class KtorOsintApiClient(
         } catch (e: Exception) {
             Result.failure(e)
         }
+
+        if (primaryResult.isSuccess) {
+            return primaryResult
+        }
+
+        // Automatic emergency failover to GitHub Backup Mirror
+        _isBackupMirrorActive.value = true
+        return gitHubBackup.getPosts(page, limit, category, attackType, search, pipeline, hours)
     }
 
     suspend fun getDecks(): Result<DeckListResponse> {

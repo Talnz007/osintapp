@@ -30,6 +30,7 @@ import com.noobdevs.osint.ui.MainViewModel
 import com.noobdevs.osint.ui.UiState
 import com.noobdevs.osint.ui.theme.*
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +47,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
     val statsState by viewModel.statsState.collectAsState()
     val posts by viewModel.posts.collectAsState()
     val selectedTimeRange by viewModel.selectedTimeRange.collectAsState()
+    val isBackupMirrorActive by viewModel.isBackupMirrorActive.collectAsState()
     var timeDropdownExpanded by remember { mutableStateOf(false) }
     var showSitrepDialog by remember { mutableStateOf(false) }
 
@@ -56,6 +58,36 @@ fun DashboardScreen(viewModel: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 36.dp)
     ) {
+        if (isBackupMirrorActive) {
+            item {
+                Surface(
+                    color = StatusAmber.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, StatusAmber.copy(alpha = 0.4f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CloudSync,
+                            contentDescription = null,
+                            tint = StatusAmber,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "OFFLINE MIRROR ACTIVE // SYNCED VIA GITHUB BACKUP",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = StatusAmber
+                        )
+                    }
+                }
+            }
+        }
+
         // Strategic Threat Level Gauge & Executive Action
         item {
             val stats = (statsState as? UiState.Success)?.data
