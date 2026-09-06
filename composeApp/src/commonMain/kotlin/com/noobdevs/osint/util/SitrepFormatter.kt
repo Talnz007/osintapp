@@ -12,10 +12,10 @@ object SitrepFormatter {
 
         return buildString {
             append("AOA Sir,\n\n")
-            append("🔶 *OSINT Tactical Update – $province [$attackType]*\n\n")
-            append("🔷 *Source*: ${post.account ?: "Regional Intelligence Monitor"}\n")
-            append("🔷 *Date*: ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}\n\n")
-            append("🔷 *Intercepted Text*:\n$cleanContent\n\n")
+            append("*OSINT Tactical Update – $province [$attackType]*\n\n")
+            append("• *Source*: ${post.account ?: "Regional Intelligence Monitor"}\n")
+            append("• *Date*: ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}\n\n")
+            append("• *Intercepted Text*:\n$cleanContent\n\n")
             if (url.isNotEmpty()) {
                 append("Link: $url\n\n")
             }
@@ -31,12 +31,12 @@ object SitrepFormatter {
 
         return buildString {
             append("AOA Sir,\n\n")
-            append("🚨 *OSINT TACTICAL SITREP – $province [$attackType]*\n\n")
-            append("👤 *Account*: ${post.account ?: "@Unknown"}\n")
-            append("📅 *Intercepted*: ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}\n\n")
-            append("📝 *Intel Details*:\n$cleanContent\n\n")
+            append("*OSINT TACTICAL SITREP – $province [$attackType]*\n\n")
+            append("• *Account*: ${post.account ?: "@Unknown"}\n")
+            append("• *Intercepted*: ${post.scrapedDate?.take(16)?.replace("T", " ") ?: "Recent"}\n\n")
+            append("• *Intel Details*:\n$cleanContent\n\n")
             if (url.isNotEmpty()) {
-                append("🔗 *Source Link*: $url\n\n")
+                append("• *Source Link*: $url\n\n")
             }
             append("Transmitted via OSINT Command Center\nRegards")
         }
@@ -83,9 +83,9 @@ object SitrepFormatter {
 
         return buildString {
             append("AOA Sir,\n\n")
-            append("🔴 *CONFIDENTIAL // FLASH OSINT THREAT SITREP*\n")
-            append("📅 *Reporting Window*: Past 24 Hours\n")
-            append("📊 *Advisory*: $severityLevel\n\n")
+            append("*CONFIDENTIAL // FLASH OSINT THREAT SITREP*\n")
+            append("• *Reporting Window*: Past 24 Hours\n")
+            append("• *Advisory*: $severityLevel\n\n")
 
             append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
             append("1. *STRATEGIC SECTOR METRICS*\n")

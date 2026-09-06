@@ -259,7 +259,12 @@ fun SitrepMarkdownRenderer(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("🔴", fontSize = 14.sp)
+                            Icon(
+                                Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = StatusRed,
+                                modifier = Modifier.size(16.dp)
+                            )
                             Text(
                                 text = "CONFIDENTIAL // FLASH OSINT THREAT SITREP",
                                 fontWeight = FontWeight.Black,
@@ -297,7 +302,7 @@ fun SitrepMarkdownRenderer(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = parseMarkdownInline(trimmed.replace("📊", "").trim(), primaryColor, onSurface),
+                                text = parseMarkdownInline(trimmed, primaryColor, onSurface),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = badgeColor

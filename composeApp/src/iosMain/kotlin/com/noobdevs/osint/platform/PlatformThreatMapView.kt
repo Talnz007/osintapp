@@ -21,6 +21,7 @@ actual fun PlatformThreatMapView(
     centerTrigger: Int
 ) {
     var webViewRef by remember { mutableStateOf<WKWebView?>(null) }
+    var navDelegate by remember { mutableStateOf<Any?>(null) }
 
     fun sendMarkers(view: WKWebView?, list: List<ThreatMapMarker>) {
         val json = buildJsonArray {
@@ -70,6 +71,13 @@ actual fun PlatformThreatMapView(
             config.userContentController = contentController
 
             val webView = WKWebView(frame = platform.CoreGraphics.CGRectZero, configuration = config)
+            val delegate = object : NSObject(), WKNavigationDelegateProtocol {
+                override fun webView(webView: WKWebView, didFinishNavigation: WKNavigation?) {
+                    sendMarkers(webView, markers)
+                }
+            }
+            navDelegate = delegate
+            webView.navigationDelegate = delegate
             val bundle = NSBundle.mainBundle
             val htmlPath = bundle.pathForResource("map", ofType = "html", inDirectory = "leaflet")
                 ?: bundle.pathForResource("map", ofType = "html")

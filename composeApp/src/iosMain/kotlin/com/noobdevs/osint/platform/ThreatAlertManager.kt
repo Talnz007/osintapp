@@ -38,7 +38,7 @@ actual object ThreatAlertManager {
         try {
             val center = UNUserNotificationCenter.currentNotificationCenter()
             val content = UNMutableNotificationContent().apply {
-                setTitle("🚨 $title")
+                setTitle("[ALERT] $title")
                 setBody(body)
                 setSound(UNNotificationSound.defaultSound)
             }
